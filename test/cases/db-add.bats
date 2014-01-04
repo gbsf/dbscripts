@@ -31,7 +31,7 @@ __movePackageToRepo() {
 		releasePackage extra ${pkgbase}
 		for arch in ${arches[@]}; do
 			__movePackageToRepo extra ${pkgbase} ${arch}
-			db-repo-add extra ${arch} ${pkgbase}-1-1-${arch}.pkg.tar.xz
+			db-add extra ${arch} ${pkgbase}-1-1-${arch}.pkg.tar.xz
 		done
 	done
 
@@ -56,7 +56,7 @@ __movePackageToRepo() {
 			__movePackageToRepo extra ${pkgbase} ${arch}
 			add_pkgs+=("${pkgbase}-1-1-${arch}.pkg.tar.xz")
 		done
-		db-repo-add extra ${arch} ${add_pkgs[@]}
+		db-add extra ${arch} ${add_pkgs[@]}
 	done
 
 	for pkgbase in ${pkgs[@]}; do
@@ -73,7 +73,7 @@ __movePackageToRepo() {
 	for pkgbase in ${pkgs[@]}; do
 		releasePackage extra ${pkgbase}
 		__movePackageToRepo extra ${pkgbase} any
-		db-repo-add extra any ${pkgbase}-1-1-any.pkg.tar.xz
+		db-add extra any ${pkgbase}-1-1-any.pkg.tar.xz
 	done
 
 	for pkgbase in ${pkgs[@]}; do
