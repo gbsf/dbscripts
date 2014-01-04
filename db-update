@@ -45,9 +45,6 @@ for repo in ${repos[@]}; do
 			if ${REQUIRE_SIGNATURE} && ! pacman-key -v "${pkg}.sig" >/dev/null 2>&1; then
 				die "Package ${repo}/${pkg##*/} does not have a valid signature"
 			fi
-			if ! check_pkgsvn "${pkg}" "${repo}"; then
-				die "Package ${repo}/${pkg##*/} is not consistent with svn repository"
-			fi
 			if ! check_pkgrepos "${pkg}"; then
 				die "Package ${repo}/${pkg##*/} already exists in another repository"
 			fi
@@ -70,31 +67,15 @@ for repo in ${repos[@]}; do
 done
 
 for repo in ${repos[@]}; do
-	msg "Updating [${repo}]..."
-	any_pkgs=($(getpkgfiles "${STAGING}/${repo}/"*-any${PKGEXT} 2>/dev/null))
-	for pkgarch in ${ARCHES[@]}; do
-		add_pkgs=()
-		arch_pkgs=($(getpkgfiles "${STAGING}/${repo}/"*-${pkgarch}${PKGEXT} 2>/dev/null))
-		for pkg in ${arch_pkgs[@]} ${any_pkgs[@]}; do
-			pkgfile="${pkg##*/}"
-			msg2 "${pkgfile} (${pkgarch})"
-			# any packages might have been moved by the previous run
-			if [ -f "${pkg}" ]; then
-				mv "${pkg}" "$FTP_BASE/${PKGPOOL}"
+	for pkgfile in $(getpkgfiles "${STAGING}/${repo}/"*${PKGEXT} 2>/dev/null); do
+		arch_add_to_pool "$pkgfile"
+		for pkgarch in ${ARCHES[@]}; do
+			pkgfile_arch="$STAGING/$repo/$pkgarch/${pkgfile##*/}"
+			if [[ -h "$pkgfile_arch" ]]; then
+				arch_db_add $repo "${pkgfile##*/}" $pkgarch
+				rm "$pkgfile_arch"
 			fi
-			ln -s "../../../${PKGPOOL}/${pkgfile}" "$FTP_BASE/$repo/os/${pkgarch}"
-			# also move signatures
-			if [ -f "${pkg}.sig" ]; then
-				mv "${pkg}.sig" "$FTP_BASE/${PKGPOOL}"
-			fi
-			if [ -f "$FTP_BASE/${PKGPOOL}/${pkgfile}.sig" ]; then
-				ln -s "../../../${PKGPOOL}/${pkgfile}.sig" "$FTP_BASE/$repo/os/${pkgarch}"
-			fi
-			add_pkgs[${#add_pkgs[*]}]=${pkgfile}
 		done
-		if [ ${#add_pkgs[@]} -ge 1 ]; then
-			arch_repo_add "${repo}" "${pkgarch}" ${add_pkgs[@]}
-		fi
 	done
 done
 

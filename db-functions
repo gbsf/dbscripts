@@ -26,11 +26,6 @@ mv_acl() {
 
 # set up general environment
 WORKDIR=$(mktemp -d "${TMPDIR}/${0##*/}.XXXXXXXXXX")
-if [ -n "${SVNUSER}" ]; then
-	setfacl -m u:"${SVNUSER}":rwx "${WORKDIR}"
-	setfacl -m d:u:"${USER}":rwx "${WORKDIR}"
-	setfacl -m d:u:"${SVNUSER}":rwx "${WORKDIR}"
-fi
 LOCKS=()
 REPO_MODIFIED=0
 
@@ -371,36 +366,6 @@ check_pkgfile() {
 	fi
 }
 
-check_pkgsvn() {
-	local pkgfile="${1}"
-	local _pkgbase="$(getpkgbase ${pkgfile})"
-	[ $? -ge 1 ] && return 1
-	local _pkgname="$(getpkgname ${pkgfile})"
-	[ $? -ge 1 ] && return 1
-	local _pkgver="$(getpkgver ${pkgfile})"
-	[ $? -ge 1 ] && return 1
-	local _pkgarch="$(getpkgarch ${pkgfile})"
-	[ $? -ge 1 ] && return 1
-	local repo="${2}"
-
-	in_array "${repo}" ${PKGREPOS[@]} || return 1
-
-	if [ ! -f "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}" ]; then
-		mkdir -p "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}"
-		arch_svn export -q "${SVNREPO}/${_pkgbase}/repos/${repo}-${_pkgarch}/PKGBUILD" \
-			"${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}" >/dev/null
-		[ $? -ge 1 ] && return 1
-	fi
-
-	local svnver="$(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}"; echo $(get_full_version ${epoch:-0} ${pkgver} ${pkgrel}) )"
-	[ "${svnver}" == "${_pkgver}" ] || return 1
-
-	local svnnames=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}"; echo ${pkgname[@]}))
-	in_array "${_pkgname}" ${svnnames[@]} || return 1
-
-	return 0
-}
-
 check_splitpkgs() {
 	local repo="${1}"
 	shift
@@ -544,10 +509,40 @@ arch_repo_remove() {
 	REPO_MODIFIED=1
 }
 
-arch_svn() {
-	if [ -z "${SVNUSER}" ]; then
-		/usr/bin/svn "${@}"
-	else
-		sudo -u "${SVNUSER}" -- /usr/bin/svn --username "${USER}" "${@}"
+arch_add_to_pool() {
+	local pkgfile="$1"
+	if [ -f "${pkgfile}" ]; then
+		mv "${pkgfile}" "$FTP_BASE/${PKGPOOL}"
 	fi
+
+	# also move signatures
+	if [ -f "${pkgfile}.sig" ]; then
+		mv "${pkgfile}.sig" "$FTP_BASE/${PKGPOOL}"
+	fi
+}
+
+# add a package name (from the pool) to the database
+# call arch_add_to_pool first
+arch_db_add() {
+	local repo="$1"
+	local pkgfile="${2##*/}"
+	local tarches=(${@:3})
+
+	for tarch in ${tarches[@]}; do
+		srcfile="$FTP_BASE/${PKGPOOL}/${pkgfile}"
+		dstdir="$FTP_BASE/$repo/os/$tarch"
+
+		if [[ ! -f "${srcfile}" ]]; then
+			die "Package file ${pkgfile} not found in ${FTP_BASE}/${PKGPOOL}"
+		else
+			msg "Adding $pkgfile to [$repo]-$tarch..."
+		fi
+
+		ln -sr "$srcfile" "$dstdir/"
+		if [ -f "${srcfile}.sig" ]; then
+			ln -sr "${srcfile}.sig" "$dstdir/"
+		fi
+
+		arch_repo_add "${repo}" "${tarch}" ${pkgfile}
+	done
 }
