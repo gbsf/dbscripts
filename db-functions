@@ -28,6 +28,8 @@ mv_acl() {
 WORKDIR=$(mktemp -d "${TMPDIR}/${0##*/}.XXXXXXXXXX")
 LOCKS=()
 REPO_MODIFIED=0
+declare -a HISTORY_add_files=()
+declare -a HISTORY_remove_files=()
 
 # check if messages are to be printed using color
 unset ALL_OFF BOLD BLUE GREEN RED YELLOW
@@ -573,7 +575,7 @@ arch_history_add() {
 	mkdir -p "${history_file%/*}"
 	echo "$pkgbase $pkgver" > "$history_file"
 
-	arch_git add "$history_file"
+	HISTORY_add_files=("${HISTORY_add_files[@]}" "$history_file")
 }
 
 arch_history_remove() {
@@ -582,12 +584,21 @@ arch_history_remove() {
 	local tarches="$3"
 
 	local history_file="$GITREPO/$repo/$tarch/$pkgname"
-	arch_git rm "$history_file"
+
+	[[ -f "$history_file" ]] || return 1
+
+	HISTORY_remove_files=("${HISTORY_remove_files[@]}" "$history_file")
 }
 
-arch_git() {
+arch_history_commit() {
 	pushd "$GITREPO"
-	git "$@"
+		if ((${#HISTORY_add_files[@]} > 0)); then
+			git add -- "${HISTORY_add_files[@]}"
+		fi
+		if ((${#HISTORY_remove_files[@]} > 0)); then
+			git rm -- "${HISTORY_remove_files[@]}"
+		fi
+		git commit -q -m "$1"
 	popd
 }
 
