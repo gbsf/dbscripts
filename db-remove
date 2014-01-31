@@ -36,6 +36,12 @@ for pkgbase in ${pkgbases[@]}; do
 done
 
 for tarch in ${tarches[@]}; do
-	arch_repo_remove "${repo}" "${tarch}" ${remove_pkgs[@]}
+	arch_db_remove "${repo}" "${tarch}" ${remove_pkgs[@]}
+done
+
+arch_git commit -q -m "db-remove: ${remove_pkgs[@]}"
+
+for tarch in ${tarches[@]}; do
 	repo_unlock $repo $tarch
 done
+

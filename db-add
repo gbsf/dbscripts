@@ -35,6 +35,8 @@ for pkgfile in ${pkgfiles[@]}; do
 	arch_db_add $repo "$pkgfile" ${tarches[@]}
 done
 
+arch_git commit -q -m "db-add: ${tarches[@]}: ${pkgfiles[@]}"
+
 for tarch in ${tarches[@]}; do
 	repo_unlock $repo $tarch
 done

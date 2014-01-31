@@ -57,9 +57,6 @@ for repo in ${repos[@]}; do
 				die "Package %s was not built in a chroot" "$repo/${pkg##*/}"
 			fi
 		done
-		if ! check_splitpkgs ${repo} ${pkgs[@]}; then
-			die "Missing split packages for %s" "$repo"
-		fi
 	else
 		die "Could not read %s" "$STAGING"
 	fi
@@ -77,6 +74,8 @@ for repo in ${repos[@]}; do
 		done
 	done
 done
+
+arch_git commit -q -m "db-update: ${repos[@]}"
 
 for repo in ${repos[@]}; do
 	for pkgarch in ${ARCHES[@]}; do
