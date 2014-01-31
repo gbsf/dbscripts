@@ -12,7 +12,7 @@ args=(${@})
 repo_from="${args[0]}"
 repo_to="${args[1]}"
 arch="${args[2]}"
-pkgs="${args[@]:3}"
+pkgs=("${args[@]:3}")
 ftppath_from="${FTP_BASE}/${repo_from}/os/"
 ftppath_to="${FTP_BASE}/${repo_to}/os/"
 
