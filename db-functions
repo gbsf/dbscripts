@@ -471,7 +471,10 @@ arch_db_add() {
 	done
 
 	arch_repo_add "${repo}" "${tarch}" "${pkgfiles[@]}"
-	arch_history_add "$repo" "$dstdir/$pkgfile" "$tarch"
+
+	for pkgfile in "${pkgfiles[@]}"; do
+		arch_history_add "$repo" "$dstdir/$pkgfile" "$tarch"
+	done
 }
 
 arch_db_remove() {
