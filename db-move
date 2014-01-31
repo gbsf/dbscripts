@@ -35,7 +35,7 @@ for pkg in "${pkgs[@]}"; do
 	arch_db_remove "${repo_from}" "$arch" "$pkgname"
 done
 
-arch_git commit -q -m "db-move: $add_pkgs[@]"
+arch_history_commit "db-move: $add_pkgs[@]"
 
 for pkgarch in ${ARCHES[@]}; do
 	repo_unlock ${repo_from} ${pkgarch}

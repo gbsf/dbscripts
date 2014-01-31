@@ -75,7 +75,7 @@ for repo in ${repos[@]}; do
 	done
 done
 
-arch_git commit -q -m "db-update: ${repos[@]}"
+arch_history_commit "db-update: ${repos[@]}"
 
 for repo in ${repos[@]}; do
 	for pkgarch in ${ARCHES[@]}; do
