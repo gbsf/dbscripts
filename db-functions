@@ -446,7 +446,7 @@ arch_add_to_pool() {
 	fi
 }
 
-# add a package name (from the pool) to the database
+# add a package file (from the pool) to the database
 # call arch_add_to_pool first
 arch_db_add() {
 	local repo="$1"
