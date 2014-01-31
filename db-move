@@ -28,13 +28,16 @@ done
 
 msg "Moving packages from [${repo_from}] to [${repo_to}]..."
 
+# TODO: resolve pkgname to pkgfile for db_add
+#       and actually make this script callable
+#       with a pkgname rather than a pkgfile
 for pkg in "${pkgs[@]}"; do
 	pkgname=$(getpkgname "$FTP_BASE/$PKGPOOL/$pkg")
 	arch_db_add "${repo_to}" "$arch" "$pkg"
 	arch_db_remove "${repo_from}" "$arch" "$pkgname"
 done
 
-arch_history_commit "db-move: $add_pkgs[@]"
+arch_history_commit "db-move: ${pkgs[@]}"
 
 for pkgarch in ${ARCHES[@]}; do
 	repo_unlock ${repo_from} ${pkgarch}
