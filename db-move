@@ -30,8 +30,7 @@ msg "Moving packages from [%s] to [%s]..." "$repo_from" "$repo_to"
 
 for pkg in "${pkgs[@]}"; do
 	pkgname=$(getpkgname "$FTP_BASE/$PKGPOOL/$pkg")
-	# TODO: interfaces for db_add and db_remove need some work
-	arch_db_add "${repo_to}" "$pkg" "$arch"
+	arch_db_add "${repo_to}" "$arch" "$pkg"
 	arch_db_remove "${repo_from}" "$arch" "$pkgname"
 done
 

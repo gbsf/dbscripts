@@ -32,7 +32,7 @@ for pkgfile in ${pkgfiles[@]}; do
 	if [[ -f "$pkgfile" ]]; then
 		arch_add_to_pool "$pkgfile"
 	fi
-	arch_db_add $repo "$pkgfile" ${tarches[@]}
+	arch_db_add $repo ${tarches[@]} "$pkgfile"
 done
 
 arch_history_commit "db-add: ${tarches[@]}: ${pkgfiles[@]}"
