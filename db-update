@@ -64,18 +64,24 @@ for repo in ${repos[@]}; do
 done
 
 for repo in ${repos[@]}; do
-	declare -a pkgs_to_add=()
+	declare -a pkgfiles=()
+
 	for pkgfile in $(getpkgfiles "${STAGING}/${repo}/"*${PKGEXT} 2>/dev/null); do
 		arch_add_to_pool "$pkgfile"
-		for pkgarch in ${ARCHES[@]}; do
-			pkgfile_arch="$STAGING/$repo/$pkgarch/${pkgfile##*/}"
+		pkgfiles=("${pkgfiles[@]}" "${pkgfile##*/}")
+	done
+
+	for pkgarch in ${ARCHES[@]}; do
+		declare -a pkgs_to_add=()
+		for pkgfile in "${pkgfiles[@]}"; do
+			pkgfile_arch="$STAGING/$repo/$pkgarch/$pkgfile"
 			if [[ -h "$pkgfile_arch" ]]; then
-				pkgs_to_add=("${pkgs_to_add[@]}" "${pkgfile##*/}")
+				pkgs_to_add=("${pkgs_to_add[@]}" "$pkgfile")
 				rm "$pkgfile_arch"
 			fi
 		done
+		arch_db_add $repo "$pkgarch" "${pkgs_to_add[@]}"
 	done
-	arch_db_add $repo "$pkgarch" "${pkgs_to_add[@]}"
 done
 
 arch_history_commit "db-update: ${repos[@]}"
