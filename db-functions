@@ -452,7 +452,7 @@ arch_db_add() {
 	local repo="$1"
 	local tarch="$2"
 	local pkgfiles=("${@:3}")
-	pkgfiles=("${pkgfiles##*/}")
+	pkgfiles=("${pkgfiles[@]##*/}")
 	local dstdir="$FTP_BASE/$repo/os/$tarch"
 
 	for pkgfile in "${pkgfiles[@]}"; do
