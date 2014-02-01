@@ -12,7 +12,7 @@ args=(${@})
 repo_from="${args[0]}"
 repo_to="${args[1]}"
 arch="${args[2]}"
-pkgs=("${args[@]:3}")
+pkgnames=("${args[@]:3}")
 ftppath_from="${FTP_BASE}/${repo_from}/os/"
 ftppath_to="${FTP_BASE}/${repo_to}/os/"
 
@@ -28,16 +28,23 @@ done
 
 msg "Moving packages from [${repo_from}] to [${repo_to}]..."
 
-# TODO: resolve pkgname to pkgfile for db_add
-#       and actually make this script callable
-#       with a pkgname rather than a pkgfile
-for pkg in "${pkgs[@]}"; do
-	pkgname=$(getpkgname "$FTP_BASE/$PKGPOOL/$pkg")
-	arch_db_add "${repo_to}" "$arch" "$pkg"
-	arch_db_remove "${repo_from}" "$arch" "$pkgname"
+for pkgname in "${pkgnames[@]}"; do
+	pkgentry=$(pkgentry_from_db "$repo_from" "$arch" "$pkgname")
+	pkgs=($(getpkgfiles "$ftppath_from$arch/$pkgentry"*${PKGEXT}))
+
+	if [[ -z $pkgentry ]]; then
+		warning "Failed to detect pkgentry for $pkgname"
+		continue
+	fi
+
+	for pkg in "${pkgs[@]}"; do
+		pkgname=$(getpkgname "$pkg")
+		arch_db_add "${repo_to}" "$arch" "${pkg##*/}"
+		arch_db_remove "${repo_from}" "$arch" "$pkgname"
+	done
 done
 
-arch_history_commit "db-move: ${pkgs[@]}"
+arch_history_commit "db-move: $repo_from -> $repo_to: ${pkgnames[@]}"
 
 for pkgarch in ${ARCHES[@]}; do
 	repo_unlock ${repo_from} ${pkgarch}

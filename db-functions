@@ -606,3 +606,21 @@ arch_history_commit() {
 	popd
 }
 
+pkgentry_from_db() {
+	local repo="$1"
+	local arch="$2"
+	local pkgname="$3"
+
+	local db="$FTP_BASE/$repo/os/$arch/$repo$DBEXT"
+	local line
+
+	for line in $(tar tf "$db" | sed -n 's#^\([^/]*\)/$#\1#p'); do
+		local name=${line##*/}
+		if [[ ${line%-*-*} = $pkgname ]]; then
+			echo $name
+			return 0
+		fi
+	done
+
+	return 1
+}
