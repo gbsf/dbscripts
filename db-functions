@@ -633,5 +633,15 @@ get_file_from_pkgrepo() {
 	local filename="$3"
 
 	# TODO: implement svn/git extraction
+	# for git: cd $whereever; git show $tag:$filename
 	curl -s https://projects.archlinux.org/svntogit/community.git/plain/trunk/$filename?h=packages/$pkgbase
+	#arch_svn cat "${SVNREPO}/${_pkgbase}/tags/$tag/$filename"
+}
+
+arch_svn() {
+	if [ -z "${SVNUSER}" ]; then
+		/usr/bin/svn "${@}"
+	else
+		sudo -u "${SVNUSER}" -- /usr/bin/svn --username "${SUDO_USER}" "${@}"
+	fi
 }
