@@ -1,4 +1,6 @@
 FTP_BASE="/srv/ftp"
+HISTORYREPO=""
+DBSCRIPTS_USER=dbscripts
 SVNREPO=''
 SVNUSER=''
 PKGREPOS=()
