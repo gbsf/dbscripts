@@ -82,6 +82,11 @@ for repo in ${repos[@]}; do
 				rm "$pkgfile_arch"
 			fi
 		done
+
+		if [[ ${#pkgs_to_add[@]} = 0 ]]; then
+			continue
+		fi
+
 		arch_db_add $repo "$pkgarch" "${pkgs_to_add[@]}"
 	done
 done
