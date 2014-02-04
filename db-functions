@@ -485,7 +485,7 @@ check_pkgfile_pkgbuild() {
 
 	if [ ! -f "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}" ]; then
 		mkdir -p "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}"
-		get_file_from_pkgrepo "$_pkgbase" PKGBUILD \
+		get_file_from_pkgrepo "$_pkgbase" "$_pkgver" PKGBUILD \
 			> "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}"
 		[ $? -ge 1 ] && return 1
 	fi
@@ -618,16 +618,19 @@ pkgentry_from_db() {
 	return 1
 }
 
-# get_file_from_pkgrepo pkgbase filename
+# get_file_from_pkgrepo pkgbase tag filename
 #
 # Get a file from the package's git/svn/whatever repo.
+# tag is the full package version (epoch:pkgver-pkgrel) or depending on how
+# the VCS is used any other recognized tag.
 #
 # Implementation note: This function should be the only one directly
 # interacting with the given VCS and should automatically detect
 # where a pkgbase is stored if multiple VCSs are used.
 get_file_from_pkgrepo() {
 	local pkgbase="$1"
-	local filename="$2"
+	local tag="$2"
+	local filename="$3"
 
 	# TODO: implement svn/git extraction
 	curl -s https://projects.archlinux.org/svntogit/community.git/plain/trunk/$filename?h=packages/$pkgbase
