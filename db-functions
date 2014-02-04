@@ -25,6 +25,12 @@ mv_acl() {
 	rm -f "$1"
 }
 
+if [[ $USER != $DBSCRIPTS_USER ]]; then
+	exec sudo -H -u $DBSCRIPTS_USER "$0" "$@"
+else
+	cd "$TMPDIR"
+fi
+
 # set up general environment
 WORKDIR=$(mktemp -d "${TMPDIR}/${0##*/}.XXXXXXXXXX")
 LOCKS=()
