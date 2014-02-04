@@ -472,9 +472,40 @@ arch_repo_remove() {
 	REPO_MODIFIED=1
 }
 
+check_pkgfile_pkgbuild() {
+	local pkgfile="${1}"
+	local _pkgbase="$(getpkgbase ${pkgfile})"
+	[ $? -ge 1 ] && return 1
+	local _pkgname="$(getpkgname ${pkgfile})"
+	[ $? -ge 1 ] && return 1
+	local _pkgver="$(getpkgver ${pkgfile})"
+	[ $? -ge 1 ] && return 1
+	local _pkgarch="$(getpkgarch ${pkgfile})"
+	[ $? -ge 1 ] && return 1
+
+	if [ ! -f "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}" ]; then
+		mkdir -p "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}"
+		get_file_from_pkgrepo "$_pkgbase" PKGBUILD \
+			> "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}"
+		[ $? -ge 1 ] && return 1
+	fi
+
+	local pkgbuild_ver="$(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}"; echo $(get_full_version ${epoch:-0} ${pkgver} ${pkgrel}) )"
+	[ "${pkgbuild_ver}" == "${_pkgver}" ] || return 1
+
+	local pkgbuild_names=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}"; echo ${pkgname[@]}))
+	in_array "${_pkgname}" ${pkgbuild_names[@]} || return 1
+
+	return 0
+}
+
 arch_add_to_pool() {
 	local pkgfile="$1"
 	if [ -f "${pkgfile}" ]; then
+		if ! check_pkgfile_pkgbuild "$pkgfile"; then
+			warning "package $pkgfile failed check against PKGBUILD. skipping"
+			return 0
+		fi
 		mv "${pkgfile}" "$FTP_BASE/${PKGPOOL}"
 	fi
 
@@ -497,7 +528,8 @@ arch_db_add() {
 		local srcfile="$FTP_BASE/${PKGPOOL}/${pkgfile}"
 
 		if [[ ! -f "${srcfile}" ]]; then
-			die "Package file ${pkgfile} not found in ${FTP_BASE}/${PKGPOOL}"
+			warning "Package file ${pkgfile} not found in ${FTP_BASE}/${PKGPOOL}. skipping"
+			return 0
 		else
 			msg "Adding $pkgfile to [$repo]-$tarch..."
 		fi
@@ -584,4 +616,19 @@ pkgentry_from_db() {
 	done
 
 	return 1
+}
+
+# get_file_from_pkgrepo pkgbase filename
+#
+# Get a file from the package's git/svn/whatever repo.
+#
+# Implementation note: This function should be the only one directly
+# interacting with the given VCS and should automatically detect
+# where a pkgbase is stored if multiple VCSs are used.
+get_file_from_pkgrepo() {
+	local pkgbase="$1"
+	local filename="$2"
+
+	# TODO: implement svn/git extraction
+	curl -s https://projects.archlinux.org/svntogit/community.git/plain/trunk/$filename?h=packages/$pkgbase
 }
