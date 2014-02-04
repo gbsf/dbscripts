@@ -491,7 +491,7 @@ arch_history_add() {
 	local pkgbase=$(getpkgbase "$pkgfile")
 	local pkgver=$(getpkgver "$pkgfile")
 
-	local history_file="$GITREPO/$repo/$tarch/$pkgname"
+	local history_file="$HISTORYREPO/$repo/$tarch/$pkgname"
 
 	mkdir -p "${history_file%/*}"
 	echo "$pkgbase $pkgver" > "$history_file"
@@ -504,7 +504,7 @@ arch_history_remove() {
 	local pkgname="$2"
 	local tarch="$3"
 
-	local history_file="$GITREPO/$repo/$tarch/$pkgname"
+	local history_file="$HISTORYREPO/$repo/$tarch/$pkgname"
 
 	[[ -f "$history_file" ]] || return 1
 
@@ -512,7 +512,7 @@ arch_history_remove() {
 }
 
 arch_history_commit() {
-	pushd "$GITREPO"
+	pushd "$HISTORYREPO"
 		if ((${#HISTORY_add_files[@]} > 0)); then
 			git add -- "${HISTORY_add_files[@]}"
 		fi
@@ -559,6 +559,7 @@ get_file_from_pkgrepo() {
 	# TODO: implement svn/git extraction
 	# for git: cd $whereever; git show $tag:$filename
 	curl -s https://projects.archlinux.org/svntogit/community.git/plain/trunk/$filename?h=packages/$pkgbase
+	# TODO: this requires us to restructure the repos
 	#arch_svn cat "${SVNREPO}/${_pkgbase}/tags/$tag/$filename"
 }
 
