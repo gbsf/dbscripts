@@ -63,7 +63,6 @@ for repo in ${repos[@]}; do
 done
 
 for repo in ${repos[@]}; do
-
 	for pkgfile in $(getpkgfiles "${STAGING}/${repo}/"*${PKGEXT} 2>/dev/null); do
 		arch_add_to_pool "$pkgfile"
 	done
