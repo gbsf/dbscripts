@@ -89,6 +89,7 @@ setup() {
 	cat <<eot > "${DBSCRIPTS_CONFIG}"
 	FTP_BASE="${TMP}/ftp"
 	SVNREPO="file://${TMP}/svn-packages-repo"
+	HISTORYREPO="/${TMP}/history-repo"
 	PKGREPOS=('core' 'extra' 'testing')
 	PKGPOOL='pool/packages'
 	SRCPOOL='sources/packages'
@@ -114,6 +115,8 @@ eot
 	done
 	mkdir -p "${TMP}/ftp/${PKGPOOL}"
 	mkdir -p "${TMP}/ftp/${SRCPOOL}"
+	mkdir -p "${TMP}/history-repo"
+	git init "${TMP}/history-repo"
 
 	svnadmin create "${TMP}/svn-packages-repo"
 	svn checkout -q "file://${TMP}/svn-packages-repo" "${TMP}/svn-packages-copy"
