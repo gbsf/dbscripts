@@ -88,6 +88,8 @@ setUp() {
 	done
 	mkdir -p "${TMP}/ftp/${PKGPOOL}"
 	mkdir -p "${TMP}/ftp/${SRCPOOL}"
+	mkdir -p "${TMP}/history-repo"
+	git init "${TMP}/history-repo"
 
 	msg 'Creating svn repository...'
 	svnadmin create "${TMP}/svn-packages-repo"
@@ -104,6 +106,7 @@ setUp() {
 	cat <<eot > "$(dirname ${BASH_SOURCE[0]})/../../config.local"
 	FTP_BASE="${TMP}/ftp"
 	SVNREPO="file://${TMP}/svn-packages-repo"
+	HISTORYREPO="/${TMP}/history-repo"
 	PKGREPOS=(${PKGREPOS[@]})
 	PKGPOOL="${PKGPOOL}"
 	TESTING_REPO='testing'
@@ -138,8 +141,25 @@ releasePackage() {
 	archrelease ${repo}-${arch} >/dev/null 2>&1
 	pkgver=$(. PKGBUILD; echo $(get_full_version ${epoch:-0} ${pkgver} ${pkgrel}))
 	pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
+
 	popd >/dev/null
 	cp "${pkgdir}/${pkgbase}"/*-${pkgver}-${arch}${PKGEXT} "${STAGING}"/${repo}/
+
+	if [[ $arch == "any" ]]; then
+		arches=(i686 x86_64)
+	else
+		arches=($arch)
+	fi
+
+	for _arch in "${arches[@]}"; do
+		# TODO: need to create the symlinks here (what commitpkg does)
+		for single_name in "${pkgname[@]}"; do
+			pkgfile=("${STAGING}/${repo}/"${single_name}-${pkgver}-${arch}${PKGEXT})
+			pkgfile=${pkgfile[0]##*/}
+			mkdir -p "${STAGING}/${repo}/${_arch}"
+			ln -sr "${STAGING}/${repo}/${pkgfile}" "${STAGING}/${repo}/${_arch}/${pkgfile}"
+		done
+	done
 
 	if ${REQUIRE_SIGNATURE}; then
 		for a in ${arch[@]}; do
@@ -188,10 +208,11 @@ checkAnyPackage() {
 
 	checkAnyPackageDB $repo $pkg
 
-	local pkgbase=$(getpkgbase "${FTP_BASE}/${PKGPOOL}/${pkg}")
-	arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
-	[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-any" ] \
-		|| fail "svn-packages-copy/${pkgbase}/repos/${repo}-any does not exist"
+# TODO: remove? should not be needed anymore since we don't modify svn in dbscripts
+	#local pkgbase=$(getpkgbase "${FTP_BASE}/${PKGPOOL}/${pkg}")
+	#arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
+	#[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-any" ] \
+		#|| fail "svn-packages-copy/${pkgbase}/repos/${repo}-any does not exist"
 }
 
 checkPackageDB() {
@@ -230,10 +251,11 @@ checkPackage() {
 
 	checkPackageDB $repo $pkg $arch
 
-	local pkgbase=$(getpkgbase "${FTP_BASE}/${PKGPOOL}/${pkg}")
-	arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
-	[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-${arch}" ] \
-		|| fail "svn-packages-copy/${pkgbase}/repos/${repo}-${arch} does not exist"
+# TODO: remove? should not be needed anymore since we don't modify svn in dbscripts
+	#local pkgbase=$(getpkgbase "${FTP_BASE}/${PKGPOOL}/${pkg}")
+	#arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
+	#[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-${arch}" ] \
+		#|| fail "svn-packages-copy/${pkgbase}/repos/${repo}-${arch} does not exist"
 }
 
 checkRemovedPackageDB() {
@@ -256,9 +278,10 @@ checkRemovedPackage() {
 
 	checkRemovedPackageDB $repo $pkgbase $arch
 
-	arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
-	[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-${arch}" ] \
-		&& fail "svn-packages-copy/${pkgbase}/repos/${repo}-${arch} should not exist"
+# TODO: remove? should not be needed anymore since we don't modify svn in dbscripts
+	#arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
+	#[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-${arch}" ] \
+		#&& fail "svn-packages-copy/${pkgbase}/repos/${repo}-${arch} should not exist"
 }
 
 checkRemovedAnyPackageDB() {
@@ -282,7 +305,10 @@ checkRemovedAnyPackage() {
 
 	checkRemovedAnyPackageDB $repo $pkgbase
 
-	arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
-	[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-any" ] \
-		&& fail "svn-packages-copy/${pkgbase}/repos/${repo}-any should not exist"
+# TODO: remove? should not be needed anymore since we don't modify svn in dbscripts
+	#arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
+	#[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-any" ] \
+		#&& fail "svn-packages-copy/${pkgbase}/repos/${repo}-any should not exist"
 }
+
+# vim: ft=sh:

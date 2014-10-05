@@ -2,7 +2,13 @@
 
 . "$(dirname ${BASH_SOURCE[0]})/lib/common.inc"
 
-for t in "$(dirname ${BASH_SOURCE[0]})/test.d/"*.sh; do
+if (($#>0)); then
+	tests=("$@")
+else
+	tests=("$(dirname ${BASH_SOURCE[0]})/test.d/"*.sh)
+fi
+
+for t in "${tests[@]}"; do
 	l=$(basename ${t} .sh)
 	if [ -x ${t} ]; then
 		msg "Running test '${l}'"
