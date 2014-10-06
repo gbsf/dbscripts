@@ -20,33 +20,46 @@ if ! check_repo_permission $repo_to || ! check_repo_permission $repo_from; then
 	die "You don't have permission to move packages from ${repo_from} to ${repo_to}"
 fi
 
-# TODO: this might lock too much (architectures)
-for pkgarch in ${ARCHES[@]}; do
+if ! in_array "$arch" "${ARCHES[@]}" "all"; then
+	die "Invalid arch '$arch'"
+fi
+
+if [[ $arch == "all" ]]; then
+	arches=(${ARCHES[@]})
+else
+	arches=($arch)
+fi
+
+for pkgarch in ${arches[@]}; do
 	repo_lock ${repo_to} ${pkgarch} || exit 1
 	repo_lock ${repo_from} ${pkgarch} || exit 1
 done
 
 msg "Moving packages from [${repo_from}] to [${repo_to}]..."
 
-for pkgname in "${pkgnames[@]}"; do
-	pkgentry=$(pkgentry_from_db "$repo_from" "$arch" "$pkgname")
-	pkgs=($(getpkgfiles "$ftppath_from$arch/$pkgentry"*${PKGEXT}))
+for arch in ${arches[@]}; do
+	for pkgname in "${pkgnames[@]}"; do
+		msg2 "$arch $pkgname"
 
-	if [[ -z $pkgentry ]]; then
-		warning "Failed to detect pkgentry for $pkgname"
-		continue
-	fi
+		pkgentry=$(pkgentry_from_db "$repo_from" "$arch" "$pkgname")
+		pkgs=($(getpkgfiles "$ftppath_from$arch/$pkgentry"*${PKGEXT}))
 
-	for pkg in "${pkgs[@]}"; do
-		pkgname=$(getpkgname "$pkg")
-		arch_db_add "${repo_to}" "$arch" "${pkg##*/}"
-		arch_db_remove "${repo_from}" "$arch" "$pkgname"
+		if [[ -z $pkgentry ]]; then
+			warning "Failed to detect pkgentry for $pkgname"
+			continue
+		fi
+
+		for pkg in "${pkgs[@]}"; do
+			pkgname=$(getpkgname "$pkg")
+			arch_db_add "${repo_to}" "$arch" "${pkg##*/}"
+			arch_db_remove "${repo_from}" "$arch" "$pkgname"
+		done
 	done
 done
 
 arch_history_commit "db-move: $repo_from -> $repo_to: ${pkgnames[@]}"
 
-for pkgarch in ${ARCHES[@]}; do
+for pkgarch in ${arches[@]}; do
 	repo_unlock ${repo_from} ${pkgarch}
 	repo_unlock ${repo_to} ${pkgarch}
 done
