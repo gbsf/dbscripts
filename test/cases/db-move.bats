@@ -12,7 +12,7 @@ load ../lib/common
 
 	db-update
 
-	db-move testing extra pkg-simple-a
+	db-move testing extra all pkg-simple-a
 
 	checkRemovedPackage testing pkg-simple-a
 	checkPackage extra pkg-simple-a
@@ -31,7 +31,7 @@ load ../lib/common
 
 	db-update
 
-	db-move testing extra pkg-simple-a pkg-simple-b
+	db-move testing extra all pkg-simple-a pkg-simple-b
 
 	for pkgbase in ${pkgs[@]}; do
 		checkRemovedPackage testing ${pkgbase}
@@ -51,7 +51,7 @@ load ../lib/common
 
 	db-update
 
-	db-move testing extra pkg-simple-epoch
+	db-move testing extra all pkg-simple-epoch
 
 	checkRemovedPackage testing pkg-simple-epoch
 	checkPackage extra pkg-simple-epoch
@@ -66,7 +66,7 @@ load ../lib/common
 	done
 
 	db-update
-	db-move testing extra pkg-any-a
+	db-move testing extra all pkg-any-a
 
 	checkPackage extra pkg-any-a
 	checkRemovedPackage testing pkg-any-a
@@ -85,7 +85,7 @@ load ../lib/common
 	done
 
 	db-update
-	db-move testing extra pkg-split-a
+	db-move testing extra all pkg-split-a
 
 	checkPackage extra pkg-split-a
 	checkPackage testing pkg-split-b

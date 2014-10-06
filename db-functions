@@ -454,8 +454,9 @@ arch_db_add() {
 		if [[ ! -f "${srcfile}" ]]; then
 			warning "Package file ${pkgfile} not found in ${FTP_BASE}/${PKGPOOL}. skipping"
 			return 0
-		else
-			msg "Adding $pkgfile to [$repo]-$tarch..."
+		#else
+			# TODO: echo message in db-add executable so this can be used by db-move without unwanted output
+			#msg2 "Adding $pkgfile to [$repo]-$tarch..."
 		fi
 
 		ln -sr "$srcfile" "$dstdir/"
