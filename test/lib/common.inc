@@ -147,6 +147,7 @@ releasePackage() {
 	local p
 	local pkgver
 	local pkgname
+	local arches
 
 	archreleasePackage "${repo}" "${pkgbase}" "${arch}"
 	pushd "${TMP}/svn-packages-copy"/${pkgbase}/trunk/ >/dev/null
