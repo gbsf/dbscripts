@@ -77,10 +77,8 @@ for repo in ${PKGREPOS[@]}; do
 				continue
 			fi
 
-			# Get the sources from svn
-			mkdir -p -m0770 "${WORKDIR}/pkgbuilds/${repo}-${pkgarch}"
-			arch_svn export -q "${SVNREPO}/${pkgbase}/repos/${repo}-${pkgarch}" \
-				"${WORKDIR}/pkgbuilds/${repo}-${pkgarch}/${pkgbase}" >/dev/null 2>&1
+			get_dir_from_pkgrepo "${pkgbase}" "${pkgver}" "" \
+				"${WORKDIR}/pkgbuilds/${repo}-${pkgarch}/${pkgbase}"
 			if [ $? -ge 1 ]; then
 				failedpkgs[${#failedpkgs[*]}]="${pkgbase}-${pkgver}${SRCEXT}"
 				continue

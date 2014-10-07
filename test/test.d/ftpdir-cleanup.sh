@@ -72,7 +72,7 @@ testCleanupAnyPackages() {
 	done
 
 	../db-update
-	../db-remove extra any pkg-any-a
+	../db-remove extra all pkg-any-a
 	../cron-jobs/ftpdir-cleanup >/dev/null
 
 	local pkg1='pkg-any-a-1-1-any.pkg.tar.xz'
@@ -100,7 +100,7 @@ testCleanupSplitPackages() {
 	../db-update
 
 	for arch in ${arches[@]}; do
-		../db-remove extra ${arch} ${pkgs[0]}
+		../db-remove extra ${arch} pkg-split-a{1,2}
 	done
 
 	../cron-jobs/ftpdir-cleanup >/dev/null
