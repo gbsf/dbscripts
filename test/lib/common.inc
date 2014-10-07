@@ -17,7 +17,7 @@ signpkg() {
 	if [[ -n $GPGKEY ]]; then
 		SIGNWITHKEY="-u ${GPGKEY}"
 	fi
-	gpg --detach-sign --use-agent ${SIGNWITHKEY} ${@} || die
+	gpg --batch -q --detach-sign --use-agent ${SIGNWITHKEY} ${@} || die
 }
 
 oneTimeSetUp() {
@@ -89,7 +89,7 @@ setUp() {
 	mkdir -p "${TMP}/ftp/${PKGPOOL}"
 	mkdir -p "${TMP}/ftp/${SRCPOOL}"
 	mkdir -p "${TMP}/history-repo"
-	git init "${TMP}/history-repo"
+	git init -q "${TMP}/history-repo"
 
 	msg 'Creating svn repository...'
 	svnadmin create "${TMP}/svn-packages-repo"
