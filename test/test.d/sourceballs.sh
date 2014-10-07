@@ -69,6 +69,7 @@ testSourceballsCleanup() {
 			releasePackage extra ${pkgbase} ${arch}
 		done
 	done
+
 	../db-update
 	../cron-jobs/sourceballs
 
