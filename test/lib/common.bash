@@ -116,7 +116,7 @@ eot
 	mkdir -p "${TMP}/ftp/${PKGPOOL}"
 	mkdir -p "${TMP}/ftp/${SRCPOOL}"
 	mkdir -p "${TMP}/history-repo"
-	git init "${TMP}/history-repo"
+	git init -q "${TMP}/history-repo"
 
 	svnadmin create "${TMP}/svn-packages-repo"
 	svn checkout -q "file://${TMP}/svn-packages-repo" "${TMP}/svn-packages-copy"

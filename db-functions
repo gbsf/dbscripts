@@ -513,15 +513,20 @@ arch_history_remove() {
 }
 
 arch_history_commit() {
-	pushd "$HISTORYREPO"
+	pushd "$HISTORYREPO" >/dev/null
+		did_work=0
 		if ((${#HISTORY_add_files[@]} > 0)); then
 			git add -- "${HISTORY_add_files[@]}"
+			did_work=1
 		fi
 		if ((${#HISTORY_remove_files[@]} > 0)); then
-			git rm -- "${HISTORY_remove_files[@]}"
+			git rm -q -- "${HISTORY_remove_files[@]}"
+			did_work=1
 		fi
-		git commit -q -m "$1"
-	popd
+		if ((did_work)); then
+			git commit -q -m "$1"
+		fi
+	popd >/dev/null
 }
 
 pkgentry_from_db() {
