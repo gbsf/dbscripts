@@ -138,7 +138,8 @@ releasePackage() {
 	local pkgname
 
 	pushd "${TMP}/svn-packages-copy"/${pkgbase}/trunk/ >/dev/null
-	archrelease ${repo}-${arch} >/dev/null 2>&1
+	~/git/arch/devtools/archrelease ${repo}-${arch} >/dev/null 2>&1
+	# TODO: pull archrelease and commitpkg in dbscripts so this can be done cleaner?
 	pkgver=$(. PKGBUILD; echo $(get_full_version ${epoch:-0} ${pkgver} ${pkgrel}))
 	pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
 
