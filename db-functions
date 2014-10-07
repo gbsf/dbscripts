@@ -566,8 +566,19 @@ get_file_from_pkgrepo() {
 	# for git: cd $whereever; git show $tag:$filename
 	#curl -s https://projects.archlinux.org/svntogit/community.git/plain/trunk/$filename?h=packages/$pkgbase
 	# TODO: this requires us to restructure the repos
-	#arch_svn cat "${SVNREPO}/${_pkgbase}/tags/$tag/$filename"
-	arch_svn cat "${SVNREPO}/${_pkgbase}/trunk/$filename"
+	arch_svn cat "${SVNREPO}/${pkgbase}/tags/$tag/$filename"
+	#arch_svn cat "${SVNREPO}/${pkgbase}/trunk/$filename"
+}
+
+get_dir_from_pkgrepo() {
+	local pkgbase="$1"
+	local tag="$2"
+	local src="$3"
+	local dest="$4"
+
+	# TODO: implement svn/git extraction
+	# for git: use git archive?
+	arch_svn export -q "${SVNREPO}/${pkgbase}/tags/${tag}/${src}" "${dest}"
 }
 
 arch_svn() {
