@@ -128,6 +128,17 @@ tearDown() {
 	echo
 }
 
+archreleasePackage() {
+	local repo=$1
+	local pkgbase=$2
+	local arch=$3
+	pushd "${TMP}/svn-packages-copy"/${pkgbase}/trunk/ >/dev/null
+	# TODO: pull archrelease and commitpkg in dbscripts so this can be done cleaner?
+	~/git/arch/devtools/archrelease ${repo}-${arch} >/dev/null 2>&1
+
+	popd >/dev/null
+}
+
 releasePackage() {
 	local repo=$1
 	local pkgbase=$2
@@ -137,9 +148,8 @@ releasePackage() {
 	local pkgver
 	local pkgname
 
+	archreleasePackage "${repo}" "${pkgbase}" "${arch}"
 	pushd "${TMP}/svn-packages-copy"/${pkgbase}/trunk/ >/dev/null
-	~/git/arch/devtools/archrelease ${repo}-${arch} >/dev/null 2>&1
-	# TODO: pull archrelease and commitpkg in dbscripts so this can be done cleaner?
 	pkgver=$(. PKGBUILD; echo $(get_full_version ${epoch:-0} ${pkgver} ${pkgrel}))
 	pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
 

@@ -19,6 +19,9 @@ testRemovePackages() {
 
 	for pkgbase in ${pkgs[@]}; do
 		for arch in ${arches[@]}; do
+			# TODO: removing pkg-split-a/pkg-split-b won't work because
+			# db-remove only removes single packages, not a group of split
+			# packages. do we want that?
 			../db-remove extra ${arch} ${pkgbase}
 		done
 	done
@@ -45,6 +48,9 @@ testRemoveMultiplePackages() {
 	../db-update
 
 	for arch in ${arches[@]}; do
+			# TODO: removing pkg-split-a/pkg-split-b won't work because
+			# db-remove only removes single packages, not a group of split
+			# packages. do we want that?
 		../db-remove extra ${arch} ${pkgs[@]}
 	done
 
@@ -66,7 +72,7 @@ testRemoveAnyPackages() {
 	../db-update
 
 	for pkgbase in ${pkgs[@]}; do
-		../db-remove extra any ${pkgbase}
+		../db-remove extra all ${pkgbase}
 	done
 
 	for pkgbase in ${pkgs[@]}; do

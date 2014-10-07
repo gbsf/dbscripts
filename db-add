@@ -30,6 +30,7 @@ done
 
 for pkgfile in ${pkgfiles[@]}; do
 	if [[ -f "$pkgfile" ]]; then
+		# TODO: check for signature before adding
 		arch_add_to_pool "$pkgfile"
 	fi
 	arch_db_add $repo ${tarches[@]} "$pkgfile"
