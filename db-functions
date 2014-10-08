@@ -484,6 +484,32 @@ arch_db_remove() {
 	done
 }
 
+arch_db_move() {
+	local repo_from=$1
+	local repo_to=$2
+	local arch=$3
+	local pkgnames=(${@:4})
+
+
+	local ftppath_from="${FTP_BASE}/${repo_from}/os/"
+
+	for pkgname in "${pkgnames[@]}"; do
+		pkgentry=$(pkgentry_from_db "$repo_from" "$arch" "$pkgname")
+		pkgs=($(getpkgfiles "$ftppath_from$arch/$pkgentry"*${PKGEXT}))
+
+		if [[ -z $pkgentry ]]; then
+			warning "Failed to detect pkgentry for $pkgname"
+			return 1
+		fi
+
+		for pkg in "${pkgs[@]}"; do
+			pkgname=$(getpkgname "$pkg")
+			arch_db_add "${repo_to}" "$arch" "${pkg##*/}"
+			arch_db_remove "${repo_from}" "$arch" "$pkgname"
+		done
+	done
+}
+
 arch_history_add() {
 	local repo="$1"
 	local pkgfile="$2"
