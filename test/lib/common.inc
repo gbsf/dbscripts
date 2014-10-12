@@ -91,7 +91,6 @@ setUp() {
 	mkdir -p "${TMP}/history-repo"
 	git init -q "${TMP}/history-repo"
 
-	msg 'Creating svn repository...'
 	svnadmin create "${TMP}/svn-packages-repo"
 	arch_svn checkout -q "file://${TMP}/svn-packages-repo" "${TMP}/svn-packages-copy"
 
@@ -165,6 +164,7 @@ releasePackage() {
 
 	for _arch in "${arches[@]}"; do
 		# TODO: need to create the symlinks here (what commitpkg does)
+		# should this actually use commitpkg?
 		for single_name in "${pkgname[@]}"; do
 			pkgfile=("${STAGING}/${repo}/"${single_name}-${pkgver}-${arch}${PKGEXT})
 			pkgfile=${pkgfile[0]##*/}

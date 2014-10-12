@@ -150,10 +150,9 @@ testAddIncompleteSplitPackage() {
 		releasePackage ${repo} ${pkgbase} ${arch}
 	done
 
-	# remove a split package to make db-update fail
+	# remove a split package to make db-update ignore it
 	rm "${STAGING}"/extra/${pkgbase}1-*
 
-	# TODO: should this really not add any packages but exit 0? check against new specs
 	../db-update
 
 	for arch in ${arches[@]}; do

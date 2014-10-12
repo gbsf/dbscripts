@@ -20,9 +20,6 @@ testRemovePackages() {
 
 	for pkgname in ${pkgnames[@]}; do
 		for arch in ${arches[@]}; do
-			# TODO: removing pkg-split-a/pkg-split-b won't work because
-			# db-remove only removes single packages, not a group of split
-			# packages. do we want that?
 			../db-remove extra ${arch} ${pkgname}
 		done
 	done
@@ -56,9 +53,6 @@ testRemoveMultiplePackages() {
 	../db-update
 
 	for arch in ${arches[@]}; do
-			# TODO: removing pkg-split-a/pkg-split-b won't work because
-			# db-remove only removes single packages, not a group of split
-			# packages. do we want that?
 		../db-remove extra ${arch} ${pkgnames[@]}
 	done
 
@@ -92,6 +86,24 @@ testRemoveAnyPackages() {
 	for pkgbase in ${pkgs[@]}; do
 		checkRemovedAnyPackage extra ${pkgbase}
 	done
+}
+
+testRemoveSingleArch() {
+	local pkgs=('pkg-any-a' 'pkg-any-b')
+	local pkgbase
+
+	for pkgbase in ${pkgs[@]}; do
+		releasePackage extra ${pkgbase} any
+	done
+
+	../db-update
+
+	../db-remove extra i686 pkg-any-a
+
+	checkRemovedPackage extra pkg-any-a i686
+	checkPackage extra pkg-any-a-1-1-any.pkg.tar.xz x86_64
+	checkPackage extra pkg-any-b-1-1-any.pkg.tar.xz i686
+	checkPackage extra pkg-any-b-1-1-any.pkg.tar.xz x86_64
 }
 
 . "${curdir}/../lib/shunit2"
