@@ -62,3 +62,21 @@ load ../lib/common
 		checkRemovedPackage extra ${pkgbase}
 	done
 }
+
+@test "remove single arch" {
+	local pkgs=('pkg-any-a' 'pkg-any-b')
+	local pkgbase
+
+	for pkgbase in ${pkgs[@]}; do
+		releasePackage extra ${pkgbase} any
+	done
+
+	db-update
+
+	db-remove extra i686 pkg-any-a
+
+	checkRemovedPackage extra pkg-any-a i686
+	checkPackage extra pkg-any-a-1-1-any.pkg.tar.xz x86_64
+	checkPackage extra pkg-any-b-1-1-any.pkg.tar.xz i686
+	checkPackage extra pkg-any-b-1-1-any.pkg.tar.xz x86_64
+}
