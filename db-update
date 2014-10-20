@@ -63,6 +63,10 @@ for repo in ${repos[@]}; do
 	fi
 done
 
+# TODO: check if all packages of a splitpkg are being pushed (or if they already exist in the repo: foo-x86_64 foo-data, later push foo-i686)
+
+# TODO: detect if a pkgname has been removed from a split package and clean up the repo
+
 for repo in ${repos[@]}; do
 	for pkgfile in $(getpkgfiles "${STAGING}/${repo}/"*${PKGEXT} 2>/dev/null); do
 		arch_add_to_pool "$pkgfile"
