@@ -493,6 +493,7 @@ arch_db_move() {
 
 	local ftppath_from="${FTP_BASE}/${repo_from}/os/"
 
+	# TODO: detect if a pkgname has been removed from a split package and clean up the repo
 	for pkgname in "${pkgnames[@]}"; do
 		pkgentry=$(pkgentry_from_db "$repo_from" "$arch" "$pkgname")
 		pkgs=($(getpkgfiles "$ftppath_from$arch/$pkgentry"*${PKGEXT}))
