@@ -80,7 +80,7 @@ for repo in ${PKGREPOS[@]}; do
 			get_dir_from_pkgrepo "${pkgbase}" "${pkgver}" "" \
 				"${WORKDIR}/pkgbuilds/${repo}-${pkgarch}/${pkgbase}"
 			if [ $? -ge 1 ]; then
-				failedpkgs[${#failedpkgs[*]}]="${pkgbase}-${pkgver}${SRCEXT}"
+				failedpkgs+=("${pkgbase}-${pkgver}${SRCEXT}")
 				continue
 			fi
 
@@ -91,9 +91,9 @@ for repo in ${PKGREPOS[@]}; do
 				mv_acl "${pkgbase}-${pkgver}${SRCEXT}" "${FTP_BASE}/${SRCPOOL}/${pkgbase}-${pkgver}${SRCEXT}"
 				# Avoid creating the same source package for every arch
 				echo "${pkgbase}-${pkgver}${SRCEXT}" >> "${WORKDIR}/available-src-pkgs"
-				newpkgs[${#newpkgs[*]}]="${pkgbase}-${pkgver}${SRCEXT}"
+				newpkgs+=("${pkgbase}-${pkgver}${SRCEXT}")
 			else
-				failedpkgs[${#failedpkgs[*]}]="${pkgbase}-${pkgver}${SRCEXT}"
+				failedpkgs+=("${pkgbase}-${pkgver}${SRCEXT}")
 				cat "${WORKDIR}/${pkgbase}.log" >> "${WORKDIR}/makepkg-fail.log"
 			fi
 			popd >/dev/null
