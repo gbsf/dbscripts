@@ -10,6 +10,7 @@ testTesting2xAnyPackage() {
 	pushd "${TMP}/svn-packages-copy/pkg-any-a/trunk/" >/dev/null
 	sed 's/pkgrel=1/pkgrel=2/g' -i PKGBUILD
 	arch_svn commit -q -m"update pkg to pkgrel=2" >/dev/null
+	# TODO: move this to the initial build phase
 	sudo chronic extra-i686-build
 	mv pkg-any-a-1-2-any.pkg.tar.xz "${pkgdir}/pkg-any-a/"
 	popd >/dev/null
@@ -34,6 +35,7 @@ testTesting2xMultiArchPackage() {
 	pushd "${TMP}/svn-packages-copy/pkg-any-a/trunk/" >/dev/null
 	sed 's/pkgrel=1/pkgrel=2/g' -i PKGBUILD
 	arch_svn commit -q -m"update pkg to pkgrel=2" >/dev/null
+	# TODO: move this to the initial build phase
 	sudo chronic extra-i686-build
 	mv pkg-any-a-1-2-any.pkg.tar.xz "${pkgdir}/pkg-any-a/"
 	popd >/dev/null

@@ -8,6 +8,10 @@ else
 	tests=("$(dirname ${BASH_SOURCE[0]})/test.d/"*.sh)
 fi
 
+# TODO: this should be ported to tap.sh https://github.com/andrewgregory/tap.sh
+#       and use something similar to the next line
+# prove --ext .php --state=hot,slow,all,save --timer -o -e "php index.php tools test $url" -r "$@" application/test/tests/
+
 for t in "${tests[@]}"; do
 	l=$(basename ${t} .sh)
 	if [ -x ${t} ]; then
