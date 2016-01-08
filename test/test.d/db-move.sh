@@ -15,9 +15,9 @@ testMoveSimplePackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
-	../db-move testing extra all pkg-simple-a
+	"${curdir}"/../../db-move testing extra all pkg-simple-a
 
 	for arch in ${arches[@]}; do
 		checkPackage extra pkg-simple-a-1-1-${arch}.pkg.tar.xz ${arch}
@@ -39,9 +39,9 @@ testMoveMultiplePackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
-	../db-move testing extra all pkg-simple-a pkg-simple-b
+	"${curdir}"/../../db-move testing extra all pkg-simple-a pkg-simple-b
 
 	for pkgbase in ${pkgs[@]}; do
 		for arch in ${arches[@]}; do
@@ -63,9 +63,9 @@ testMoveEpochPackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
-	../db-move testing extra all pkg-simple-epoch
+	"${curdir}"/../../db-move testing extra all pkg-simple-epoch
 
 	for arch in ${arches[@]}; do
 		checkPackage extra pkg-simple-epoch-1:1-1-${arch}.pkg.tar.xz ${arch}
@@ -81,8 +81,8 @@ testMoveAnyPackages() {
 		releasePackage testing ${pkgbase} any
 	done
 
-	../db-update
-	../db-move testing extra all pkg-any-a
+	"${curdir}"/../../db-update
+	"${curdir}"/../../db-move testing extra all pkg-any-a
 
 	checkAnyPackage extra pkg-any-a-1-1-any.pkg.tar.xz
 	checkRemovedAnyPackage testing pkg-any-a
@@ -102,8 +102,8 @@ testMoveSplitPackages() {
 		done
 	done
 
-	../db-update
-	../db-move testing extra all pkg-split-a1 pkg-split-a2
+	"${curdir}"/../../db-update
+	"${curdir}"/../../db-move testing extra all pkg-split-a1 pkg-split-a2
 
 	for arch in ${arches[@]}; do
 		for pkg in "${pkgdir}/pkg-split-a"/*-${arch}${PKGEXT}; do

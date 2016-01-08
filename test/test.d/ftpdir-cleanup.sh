@@ -15,13 +15,13 @@ testCleanupSimplePackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for arch in ${arches[@]}; do
-		../db-remove extra ${arch} pkg-simple-a
+		"${curdir}"/../../db-remove extra ${arch} pkg-simple-a
 	done
 
-	../cron-jobs/ftpdir-cleanup >/dev/null
+	"${curdir}"/../../cron-jobs/ftpdir-cleanup >/dev/null
 
 	for arch in ${arches[@]}; do
 		local pkg1="pkg-simple-a-1-1-${arch}.pkg.tar.xz"
@@ -46,13 +46,13 @@ testCleanupEpochPackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for arch in ${arches[@]}; do
-		../db-remove extra ${arch} pkg-simple-epoch
+		"${curdir}"/../../db-remove extra ${arch} pkg-simple-epoch
 	done
 
-	../cron-jobs/ftpdir-cleanup >/dev/null
+	"${curdir}"/../../cron-jobs/ftpdir-cleanup >/dev/null
 
 	for arch in ${arches[@]}; do
 		local pkg1="pkg-simple-epoch-1:1-1-${arch}.pkg.tar.xz"
@@ -71,9 +71,9 @@ testCleanupAnyPackages() {
 		releasePackage extra ${pkgbase} any
 	done
 
-	../db-update
-	../db-remove extra all pkg-any-a
-	../cron-jobs/ftpdir-cleanup >/dev/null
+	"${curdir}"/../../db-update
+	"${curdir}"/../../db-remove extra all pkg-any-a
+	"${curdir}"/../../cron-jobs/ftpdir-cleanup >/dev/null
 
 	local pkg1='pkg-any-a-1-1-any.pkg.tar.xz'
 	checkRemovedAnyPackage extra 'pkg-any-a'
@@ -97,13 +97,13 @@ testCleanupSplitPackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for arch in ${arches[@]}; do
-		../db-remove extra ${arch} pkg-split-a{1,2}
+		"${curdir}"/../../db-remove extra ${arch} pkg-split-a{1,2}
 	done
 
-	../cron-jobs/ftpdir-cleanup >/dev/null
+	"${curdir}"/../../cron-jobs/ftpdir-cleanup >/dev/null
 
 	for arch in ${arches[@]}; do
 		for pkg in "${pkgdir}/${pkgs[0]}"/*-${arch}${PKGEXT}; do

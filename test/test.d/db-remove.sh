@@ -16,11 +16,11 @@ testRemovePackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for pkgname in ${pkgnames[@]}; do
 		for arch in ${arches[@]}; do
-			../db-remove extra ${arch} ${pkgname}
+			"${curdir}"/../../db-remove extra ${arch} ${pkgname}
 		done
 	done
 
@@ -50,10 +50,10 @@ testRemoveMultiplePackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for arch in ${arches[@]}; do
-		../db-remove extra ${arch} ${pkgnames[@]}
+		"${curdir}"/../../db-remove extra ${arch} ${pkgnames[@]}
 	done
 
 	for pkgbase in ${pkgs[@]}; do
@@ -77,10 +77,10 @@ testRemoveAnyPackages() {
 		releasePackage extra ${pkgbase} any
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for pkgbase in ${pkgs[@]}; do
-		../db-remove extra all ${pkgbase}
+		"${curdir}"/../../db-remove extra all ${pkgbase}
 	done
 
 	for pkgbase in ${pkgs[@]}; do
@@ -96,9 +96,9 @@ testRemoveSingleArch() {
 		releasePackage extra ${pkgbase} any
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
-	../db-remove extra i686 pkg-any-a
+	"${curdir}"/../../db-remove extra i686 pkg-any-a
 
 	checkRemovedPackage extra pkg-any-a i686
 	checkPackage extra pkg-any-a-1-1-any.pkg.tar.xz x86_64

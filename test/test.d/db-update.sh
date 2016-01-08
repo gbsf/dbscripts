@@ -15,7 +15,7 @@ testAddSimplePackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for pkgbase in ${pkgs[@]}; do
 		for arch in ${arches[@]}; do
@@ -26,13 +26,13 @@ testAddSimplePackages() {
 
 testAddSingleSimplePackage() {
 	releasePackage extra 'pkg-simple-a' 'i686'
-	../db-update
+	"${curdir}"/../../db-update
 	checkPackage extra 'pkg-simple-a-1-1-i686.pkg.tar.xz' 'i686'
 }
 
 testAddSingleEpochPackage() {
 	releasePackage extra 'pkg-simple-epoch' 'i686'
-	../db-update
+	"${curdir}"/../../db-update
 	checkPackage extra 'pkg-simple-epoch-1:1-1-i686.pkg.tar.xz' 'i686'
 }
 
@@ -44,7 +44,7 @@ testAddAnyPackages() {
 		releasePackage extra ${pkgbase} any
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for pkgbase in ${pkgs[@]}; do
 		checkAnyPackage extra ${pkgbase}-1-1-any.pkg.tar.xz
@@ -64,7 +64,7 @@ testAddSplitPackages() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for pkgbase in ${pkgs[@]}; do
 		for arch in ${arches[@]}; do
@@ -77,7 +77,7 @@ testAddSplitPackages() {
 
 testUpdateAnyPackage() {
 	releasePackage extra pkg-any-a any
-	../db-update
+	"${curdir}"/../../db-update
 
 	pushd "${TMP}/svn-packages-copy/pkg-any-a/trunk/" >/dev/null
 	sed 's/pkgrel=1/pkgrel=2/g' -i PKGBUILD
@@ -88,7 +88,7 @@ testUpdateAnyPackage() {
 	popd >/dev/null
 
 	releasePackage extra pkg-any-a any
-	../db-update
+	"${curdir}"/../../db-update
 
 	checkAnyPackage extra pkg-any-a-1-2-any.pkg.tar.xz any
 
@@ -108,7 +108,7 @@ testUpdateAnyPackageToDifferentRepositoriesAtOnce() {
 
 	releasePackage testing pkg-any-a any
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	checkAnyPackage extra pkg-any-a-1-1-any.pkg.tar.xz any
 	checkAnyPackage testing pkg-any-a-1-2-any.pkg.tar.xz any
@@ -118,20 +118,20 @@ testUpdateAnyPackageToDifferentRepositoriesAtOnce() {
 
 testUpdateSameAnyPackageToSameRepository() {
 	releasePackage extra pkg-any-a any
-	../db-update
+	"${curdir}"/../../db-update
 	checkAnyPackage extra pkg-any-a-1-1-any.pkg.tar.xz any
 
 	releasePackage extra pkg-any-a any
-	../db-update >/dev/null 2>&1 && (fail 'Adding an existing package to the same repository should fail'; return 1)
+	"${curdir}"/../../db-update >/dev/null 2>&1 && (fail 'Adding an existing package to the same repository should fail'; return 1)
 }
 
 testUpdateSameAnyPackageToDifferentRepositories() {
 	releasePackage extra pkg-any-a any
-	../db-update
+	"${curdir}"/../../db-update
 	checkAnyPackage extra pkg-any-a-1-1-any.pkg.tar.xz any
 
 	releasePackage testing pkg-any-a any
-	../db-update >/dev/null 2>&1 && (fail 'Adding an existing package to another repository should fail'; return 1)
+	"${curdir}"/../../db-update >/dev/null 2>&1 && (fail 'Adding an existing package to another repository should fail'; return 1)
 
 	local arch
 	for arch in i686 x86_64; do
@@ -155,7 +155,7 @@ testAddIncompleteSplitPackage() {
 	# remove a split package to make db-update ignore it
 	rm "${STAGING}"/extra/${pkgbase}1-*
 
-	../db-update
+	"${curdir}"/../../db-update
 
 	for arch in ${arches[@]}; do
 		checkRemovedPackage extra ${pkgbase} $arch
@@ -166,7 +166,7 @@ testUnknownRepo() {
 	mkdir "${STAGING}/unknown/"
 	releasePackage extra 'pkg-simple-a' 'i686'
 	releasePackage unknown 'pkg-simple-b' 'i686'
-	../db-update
+	"${curdir}"/../../db-update
 	checkPackage extra 'pkg-simple-a-1-1-i686.pkg.tar.xz' 'i686'
 	[ -e "${FTP_BASE}/unknown" ] && fail "db-update pushed a package into an unknown repository"
 	rm -rf "${STAGING}/unknown/"

@@ -14,7 +14,7 @@ testCreateSimpleFileLists() {
 			releasePackage extra ${pkgbase} ${arch}
 		done
 	done
-	../db-update
+	"${curdir}"/../../db-update
 
 	for pkgbase in ${pkgs[@]}; do
 		for arch in ${arches[@]}; do
@@ -34,7 +34,7 @@ testCreateAnyFileLists() {
 	for pkgbase in ${pkgs[@]}; do
 		releasePackage extra ${pkgbase} any
 	done
-	../db-update
+	"${curdir}"/../../db-update
 
 	for pkgbase in ${pkgs[@]}; do
 		for arch in ${arches[@]}; do
@@ -59,7 +59,7 @@ testCreateSplitFileLists() {
 			releasePackage extra ${pkgbase} ${arch}
 		done
 	done
-	../db-update
+	"${curdir}"/../../db-update
 
 	for pkgbase in ${pkgs[@]}; do
 		pkgnames=($(source "${TMP}/svn-packages-copy/${pkgbase}/trunk/PKGBUILD"; echo ${pkgname[@]}))
@@ -85,10 +85,10 @@ testCleanupFileLists() {
 			releasePackage extra ${pkgbase} ${arch}
 		done
 	done
-	../db-update
+	"${curdir}"/../../db-update
 
 	for arch in ${arches[@]}; do
-		../db-remove extra ${arch} pkg-simple-a
+		"${curdir}"/../../db-remove extra ${arch} pkg-simple-a
 	done
 
 	for arch in ${arches[@]}; do

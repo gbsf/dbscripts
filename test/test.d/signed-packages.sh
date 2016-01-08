@@ -5,13 +5,13 @@ curdir=$(readlink -e $(dirname $0))
 
 testAddSignedPackage() {
 	releasePackage extra 'pkg-simple-a' 'i686'
-	../db-update || fail "db-update failed!"
+	"${curdir}"/../../db-update || fail "db-update failed!"
 }
 
 testAddUnsignedPackage() {
 	releasePackage extra 'pkg-simple-a' 'i686'
 	rm "${STAGING}"/extra/*.sig
-	../db-update >/dev/null 2>&1 && fail "db-update should fail when a signature is missing!"
+	"${curdir}"/../../db-update >/dev/null 2>&1 && fail "db-update should fail when a signature is missing!"
 }
 
 testAddInvalidSignedPackage() {
@@ -21,7 +21,7 @@ testAddInvalidSignedPackage() {
 		unxz $p
 		xz -0 ${p%%.xz}
 	done
-	../db-update >/dev/null 2>&1 && fail "db-update should fail when a signature is invalid!"
+	"${curdir}"/../../db-update >/dev/null 2>&1 && fail "db-update should fail when a signature is invalid!"
 }
 
 testAddBrokenSignature() {
@@ -30,7 +30,7 @@ testAddBrokenSignature() {
 	for s in "${STAGING}"/extra/*.sig; do
 		echo 0 > $s
 	done
-	../db-update >/dev/null 2>&1 && fail "db-update should fail when a signature is broken!"
+	"${curdir}"/../../db-update >/dev/null 2>&1 && fail "db-update should fail when a signature is broken!"
 }
 
 . "${curdir}/../lib/shunit2"

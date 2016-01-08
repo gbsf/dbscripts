@@ -14,9 +14,9 @@ testSourceballs() {
 			releasePackage extra ${pkgbase} ${arch}
 		done
 	done
-	../db-update
+	"${curdir}"/../../db-update
 
-	../cron-jobs/sourceballs
+	"${curdir}"/../../cron-jobs/sourceballs
 	for pkgbase in ${pkgs[@]}; do
 		[ ! -r ${FTP_BASE}/${SRCPOOL}/${pkgbase}-*${SRCEXT} ] && fail "source package not found!"
 	done
@@ -29,9 +29,9 @@ testAnySourceballs() {
 	for pkgbase in ${pkgs[@]}; do
 		releasePackage extra ${pkgbase} any
 	done
-	../db-update
+	"${curdir}"/../../db-update
 
-	../cron-jobs/sourceballs
+	"${curdir}"/../../cron-jobs/sourceballs
 	for pkgbase in ${pkgs[@]}; do
 		[ ! -r ${FTP_BASE}/${SRCPOOL}/${pkgbase}-*${SRCEXT} ] && fail "source package not found!"
 	done
@@ -50,9 +50,9 @@ testSplitSourceballs() {
 		done
 	done
 
-	../db-update
+	"${curdir}"/../../db-update
 
-	../cron-jobs/sourceballs
+	"${curdir}"/../../cron-jobs/sourceballs
 	for pkgbase in ${pkgs[@]}; do
 		[ ! -r ${FTP_BASE}/${SRCPOOL}/${pkgbase}-*${SRCEXT} ] && fail "source package not found!"
 	done
@@ -70,14 +70,14 @@ testSourceballsCleanup() {
 		done
 	done
 
-	../db-update
-	../cron-jobs/sourceballs
+	"${curdir}"/../../db-update
+	"${curdir}"/../../cron-jobs/sourceballs
 
 	for arch in ${arches[@]}; do
-		../db-remove extra ${arch} pkg-simple-a
+		"${curdir}"/../../db-remove extra ${arch} pkg-simple-a
 	done
 
-	../cron-jobs/sourceballs
+	"${curdir}"/../../cron-jobs/sourceballs
 	[ -r ${FTP_BASE}/${SRCPOOL}/pkg-simple-a-*${SRCEXT} ] && fail "source package was not removed!"
 	[ ! -r ${FTP_BASE}/${SRCPOOL}/pkg-simple-b-*${SRCEXT} ] && fail "source package not found!"
 }

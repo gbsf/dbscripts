@@ -13,7 +13,7 @@ testAddSimplePackages() {
 		for arch in ${arches[@]}; do
 			archreleasePackage extra "${pkgbase}" "${arch}"
 			signpkg "${TMP}/svn-packages-copy/${pkgbase}/trunk/${pkgbase}-1-1-${arch}.pkg.tar.xz"
-			../db-add extra ${arch} "${TMP}/svn-packages-copy/${pkgbase}/trunk/${pkgbase}-1-1-${arch}.pkg.tar.xz"
+			"${curdir}"/../../db-add extra ${arch} "${TMP}/svn-packages-copy/${pkgbase}/trunk/${pkgbase}-1-1-${arch}.pkg.tar.xz"
 		done
 	done
 
@@ -37,7 +37,7 @@ testAddMultiplePackages() {
 			signpkg "${TMP}/svn-packages-copy/${pkgbase}/trunk/${pkgbase}-1-1-${arch}.pkg.tar.xz"
 			add_pkgs[${#add_pkgs[*]}]="${TMP}/svn-packages-copy/${pkgbase}/trunk/${pkgbase}-1-1-${arch}.pkg.tar.xz"
 		done
-		../db-add extra ${arch} ${add_pkgs[@]}
+		"${curdir}"/../../db-add extra ${arch} ${add_pkgs[@]}
 	done
 
 	for pkgbase in ${pkgs[@]}; do

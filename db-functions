@@ -26,9 +26,8 @@ mv_acl() {
 
 if [[ $USER != $DBSCRIPTS_USER ]]; then
 	exec sudo -H -u $DBSCRIPTS_USER "$0" "$@"
-# TODO: uncomment this again and make sure the testsuite doesn't break because of it
-#else
-	#cd "$TMPDIR"
+else
+	cd "$TMPDIR"
 fi
 
 # set up general environment

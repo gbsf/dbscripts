@@ -1,11 +1,13 @@
 #!/bin/bash
 
-. "$(dirname ${BASH_SOURCE[0]})/lib/common.inc"
+curdir=$(readlink -e $(dirname ${BASH_SOURCE[0]}))
+
+. "$curdir/lib/common.inc"
 
 if (($#>0)); then
-	tests=("$@")
+	tests=("${@/#/$curdir/}")
 else
-	tests=("$(dirname ${BASH_SOURCE[0]})/test.d/"*.sh)
+	tests=("$curdir/test.d/"*.sh)
 fi
 
 # TODO: this should be ported to tap.sh https://github.com/andrewgregory/tap.sh
