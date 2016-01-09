@@ -12,8 +12,9 @@ testAddSimplePackages() {
 	for pkgbase in ${pkgs[@]}; do
 		for arch in ${arches[@]}; do
 			archreleasePackage extra "${pkgbase}" "${arch}"
-			signpkg "${TMP}/svn-packages-copy/${pkgbase}/trunk/${pkgbase}-1-1-${arch}.pkg.tar.xz"
-			"${curdir}"/../../db-add extra ${arch} "${TMP}/svn-packages-copy/${pkgbase}/trunk/${pkgbase}-1-1-${arch}.pkg.tar.xz"
+			cp "${pkgdir}/${pkgbase}/${pkgbase}-1-1-${arch}.pkg.tar.xz" "${TMP}"
+			signpkg "${TMP}/${pkgbase}-1-1-${arch}.pkg.tar.xz"
+			"${curdir}"/../../db-add extra ${arch} "${TMP}/${pkgbase}-1-1-${arch}.pkg.tar.xz"
 		done
 	done
 
@@ -34,8 +35,9 @@ testAddMultiplePackages() {
 		add_pkgs=()
 		for pkgbase in ${pkgs[@]}; do
 			archreleasePackage extra "${pkgbase}" "${arch}"
-			signpkg "${TMP}/svn-packages-copy/${pkgbase}/trunk/${pkgbase}-1-1-${arch}.pkg.tar.xz"
-			add_pkgs[${#add_pkgs[*]}]="${TMP}/svn-packages-copy/${pkgbase}/trunk/${pkgbase}-1-1-${arch}.pkg.tar.xz"
+			cp "${pkgdir}/${pkgbase}/${pkgbase}-1-1-${arch}.pkg.tar.xz" "${TMP}"
+			signpkg "${TMP}/${pkgbase}-1-1-${arch}.pkg.tar.xz"
+			add_pkgs[${#add_pkgs[*]}]="${TMP}/${pkgbase}-1-1-${arch}.pkg.tar.xz"
 		done
 		"${curdir}"/../../db-add extra ${arch} ${add_pkgs[@]}
 	done

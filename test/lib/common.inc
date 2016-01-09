@@ -94,10 +94,11 @@ setUp() {
 	svnadmin create "${TMP}/svn-packages-repo"
 	arch_svn checkout -q "file://${TMP}/svn-packages-repo" "${TMP}/svn-packages-copy"
 
-	for p in "${pkgdir}"/*; do
+	for p in "$(dirname ${BASH_SOURCE[0]})"/../packages/*; do
 		pkg=${p##*/}
 		mkdir -p "${TMP}/svn-packages-copy/${pkg}"/{trunk,repos}
 		cp "${p}"/* "${TMP}/svn-packages-copy"/${pkg}/trunk/
+		rm -f "${TMP}/svn-packages-copy"/${pkg}/trunk/*${PKGEXT}
 		arch_svn add -q "${TMP}/svn-packages-copy"/${pkg}
 		arch_svn commit -q -m"initial commit of ${pkg}" "${TMP}/svn-packages-copy"
 	done
