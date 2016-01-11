@@ -48,7 +48,7 @@ for pkgname in "$@"; do
 	${found_source} || warning "${pkgname} not found in [${TESTING_REPO}]. skipping"
 done
 
-arch_history_commit "testing2x: $@"
+arch_history_commit "testing2x: $*"
 
 for repo in  ${TESTING_REPO} ${STABLE_REPOS[@]}; do
 	for pkgarch in ${ARCHES[@]}; do

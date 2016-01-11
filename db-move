@@ -44,7 +44,7 @@ for arch in ${arches[@]}; do
 	done
 done
 
-arch_history_commit "db-move: $repo_from -> $repo_to: ${pkgnames[@]}"
+arch_history_commit "db-move: $repo_from -> $repo_to: ${pkgnames[*]}"
 
 for pkgarch in ${arches[@]}; do
 	repo_unlock ${repo_from} ${pkgarch}

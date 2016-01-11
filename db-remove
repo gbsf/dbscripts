@@ -39,7 +39,7 @@ for tarch in ${tarches[@]}; do
 	arch_db_remove "${repo}" "${tarch}" ${remove_pkgs[@]}
 done
 
-arch_history_commit "db-remove: ${remove_pkgs[@]}"
+arch_history_commit "db-remove: ${remove_pkgs[*]}"
 
 for tarch in ${tarches[@]}; do
 	repo_unlock $repo $tarch
