@@ -9,7 +9,7 @@ if [ $# -ge 1 ]; then
 fi
 
 # Find repos with packages to release
-staging_repos=($(find  "${STAGING}" -mindepth 1 -type f -name "*${PKGEXT}" -printf '%h\n' | sort -u))
+staging_repos=($(find "${STAGING}" -mindepth 1 -type f -name "*${PKGEXT}" -printf '%h\n' | sort -u))
 if [ $? -ge 1 ]; then
 	die "Could not read ${STAGING}"
 fi
@@ -21,10 +21,14 @@ for staging_repo in ${staging_repos[@]##*/}; do
 	fi
 done
 
-# TODO: this might lock too much (architectures)
+locks=()
 for repo in ${repos[@]}; do
 	for pkgarch in ${ARCHES[@]}; do
-		repo_lock ${repo} ${pkgarch} || exit 1
+		if [ -n "$(find "$STAGING/$repo" -maxdepth 1 \( -name "*${pkgarch}${PKGEXT}" -o \
+				-name "*any${PKGEXT}" \) -a -type f -print -quit)" ]; then
+			repo_lock ${repo} ${pkgarch} || exit 1
+			locks+=($repo/$pkgarch)
+		fi
 	done
 done
 
@@ -98,8 +102,8 @@ done
 
 arch_history_commit "db-update: ${repos[*]}"
 
-for repo in ${repos[@]}; do
-	for pkgarch in ${ARCHES[@]}; do
-		repo_unlock ${repo} ${pkgarch}
-	done
+for lock in ${locks[@]}; do
+	repo=${lock%/*}
+	pkgarch=${lock#*/}
+	repo_unlock ${repo} ${pkgarch}
 done
