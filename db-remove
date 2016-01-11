@@ -30,7 +30,7 @@ done
 
 remove_pkgs=()
 for pkgbase in ${pkgbases[@]}; do
-	msg "Removing $pkgbase from [${repo}-${tarch}]..."
+	msg "Removing $pkgbase from [${repo}-${arch}]..."
 	# TODO: detect split packages; do we even want them to be removed automatically?
 	remove_pkgs[${#remove_pkgs[*]}]=$pkgbase
 done

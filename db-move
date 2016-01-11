@@ -39,7 +39,7 @@ msg "Moving packages from [${repo_from}] to [${repo_to}]..."
 
 for arch in ${arches[@]}; do
 	for pkgname in "${pkgnames[@]}"; do
-		msg2 "$arch $pkgname"
+		msg2 "$arch\t$pkgname"
 		arch_db_move "${repo_from}" "${repo_to}" "${arch}" "${pkgname}"
 	done
 done

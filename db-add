@@ -28,18 +28,28 @@ for tarch in ${tarches[@]}; do
 	repo_lock $repo $tarch || exit 1
 done
 
+msg "Adding packages for [$repo]..."
+
+errored=false
 for pkgfile in ${pkgfiles[@]}; do
 	if [[ -f "$pkgfile" ]]; then
-		# TODO: check for signature before adding
+		if $REQUIRE_SIGNATURE && [[ ! -f "${pkgfile}.sig" ]]; then
+			error "Package signature ${pkgfile}.sig not found!"
+			errored=true
+			break
+		fi
 		arch_add_to_pool "$pkgfile"
 	fi
+
+	for tarch in ${tarches[@]}; do
+		msg2 "$tarch\t${pkgfile##*/}"
+		arch_db_add $repo $tarch $pkgfile
+	done
 done
 
-for tarch in "${tarches[@]}"; do
-	arch_db_add $repo $tarch "${pkgfiles[@]}"
-done
-
-arch_history_commit "db-add: ${tarches[@]}: ${pkgfiles[@]}"
+if ! $errored; then
+	arch_history_commit "db-add: ${tarches[*]}: ${pkgfiles[*]##*/}"
+fi
 
 for tarch in ${tarches[@]}; do
 	repo_unlock $repo $tarch
