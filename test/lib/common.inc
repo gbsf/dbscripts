@@ -158,7 +158,7 @@ releasePackage() {
 	cp "${pkgdir}/${pkgbase}"/*-${pkgver}-${arch}${PKGEXT} "${STAGING}"/${repo}/
 
 	if [[ $arch == "any" ]]; then
-		arches=(i686 x86_64)
+		arches=("${ARCHES[@]}")
 	else
 		arches=($arch)
 	fi
@@ -194,7 +194,7 @@ checkAnyPackageDB() {
 		[ -r "${FTP_BASE}/${PKGPOOL}/${pkg}.sig" ] || fail "${PKGPOOL}/${pkg}.sig not found"
 	fi
 
-	for arch in i686 x86_64; do
+	for arch in "${ARCHES[@]}"; do
 		[ -L "${FTP_BASE}/${repo}/os/${arch}/${pkg}" ] || fail "${repo}/os/${arch}/${pkg} is not a symlink"
 		[ "$(readlink -e "${FTP_BASE}/${repo}/os/${arch}/${pkg}")" == "${FTP_BASE}/${PKGPOOL}/${pkg}" ] \
 			|| fail "${repo}/os/${arch}/${pkg} does not link to ${PKGPOOL}/${pkg}"
@@ -304,7 +304,7 @@ checkRemovedAnyPackageDB() {
 	local db
 
 	for db in ${DBEXT} ${FILESEXT}; do
-		for arch in i686 x86_64; do
+		for arch in "${ARCHES[@]}"; do
 			( [ -r "${FTP_BASE}/${repo}/os/${arch}/${repo}${db%.tar.*}" ] \
 				&& bsdtar -xf "${FTP_BASE}/${repo}/os/${arch}/${repo}${db%.tar.*}" -O | grep -q ${pkgbase}) \
 				&& fail "${pkgbase} should not be in ${repo}/os/${arch}/${repo}${db%.tar.*}"

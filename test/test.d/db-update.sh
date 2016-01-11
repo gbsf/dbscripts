@@ -134,7 +134,7 @@ testUpdateSameAnyPackageToDifferentRepositories() {
 	"${curdir}"/../../db-update >/dev/null 2>&1 && (fail 'Adding an existing package to another repository should fail'; return 1)
 
 	local arch
-	for arch in i686 x86_64; do
+	for arch in "${ARCHES[@]}"; do
 		( [ -r "${FTP_BASE}/testing/os/${arch}/testing${DBEXT%.tar.*}" ] \
 			&& bsdtar -xf "${FTP_BASE}/testing/os/${arch}/testing${DBEXT%.tar.*}" -O | grep -q ${pkgbase}) \
 			&& fail "${pkgbase} should not be in testing/os/${arch}/testing${DBEXT%.tar.*}"
