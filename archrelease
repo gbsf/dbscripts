@@ -1,0 +1,62 @@
+#!/bin/bash
+
+DIR=$(readlink -e $PWD)
+
+. "$(dirname $0)/config"
+. "$(dirname $0)/db-functions"
+
+if [[ ! -f "$DIR"/PKGBUILD ]]; then
+	die 'archrelease: PKGBUILD not found'
+fi
+
+trunk=${DIR##*/}
+
+# Normally this should be trunk, but it may be something
+# such as 'gnome-unstable'
+IFS='/' read -r -d '' -a parts <<< "$DIR"
+if [[ "${parts[@]:(-2):1}" == "repos" ]]; then
+	die 'archrelease: Should not be in repos dir (try from trunk/)'
+fi
+unset parts
+
+if [[ $(svn status -q $DIR) ]]; then
+	die 'archrelease: You have not committed your changes yet!'
+fi
+
+pushd "$DIR"/.. >/dev/null
+IFS=$'\n' read -r -d '' -a known_files < <(svn ls -r HEAD "$trunk")
+for file in "${known_files[@]}"; do
+	if [[ ${file:(-1)} = '/' ]]; then
+		die "archrelease: subdirectories are not supported in package directories!"
+	fi
+done
+
+# gracefully handle files containing an "@" character
+known_files=("${known_files[@]/%/@}")
+tag=$(. "$trunk"/PKGBUILD; get_full_version $pkgname)
+
+stat_busy "Copying ${trunk} to ${tag}"
+
+if [[ -d tags/$tag ]]; then
+	#declare -a trash
+	#trash=()
+	#while read -r file; do
+		#trash+=("tags/$tag/$file")
+	#done < <(svn ls "tags/$tag")
+	#[[ $trash ]] && svn rm -q "${trash[@]/%/@}"
+	die "already tagged"
+else
+	mkdir -p "tags/$tag"
+	svn add --parents -q "tags/$tag"
+fi
+
+# copy all files at once from trunk to the subdirectory in repos/
+svn copy -q -r HEAD "${known_files[@]/#/$trunk/}" "tags/$tag/"
+
+stat_done
+
+stat_busy "Releasing package"
+svn commit -q -m "archrelease: copy ${trunk} to $tag" || abort
+stat_done
+
+popd >/dev/null

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+shopt -s extglob
+
 # Some PKGBUILDs need CARCH to be set
 CARCH="x86_64"
 
@@ -74,6 +76,15 @@ error() {
 	printf "${RED}==> ERROR${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
 }
 
+stat_busy() {
+	local mesg=$1; shift
+	printf "${GREEN}==>${ALL_OFF}${BOLD} ${mesg}...${ALL_OFF}" >&2
+}
+
+stat_done() {
+	printf "${BOLD}done${ALL_OFF}\n" >&2
+}
+
 ##
 #  usage : in_array( $needle, $haystack )
 # return : 0 - found
@@ -90,16 +101,103 @@ in_array() {
 }
 
 ##
-#  usage : get_full_version( $epoch, $pkgver, $pkgrel )
+#  usage : get_full_version( [$pkgname] )
 # return : full version spec, including epoch (if necessary), pkgver, pkgrel
 ##
 get_full_version() {
-	if [[ $1 -eq 0 ]]; then
-		# zero epoch case, don't include it in version
-		echo $2-$3
+	# set defaults if they weren't specified in buildfile
+	pkgbase=${pkgbase:-${pkgname[0]}}
+	epoch=${epoch:-0}
+	if [[ -z $1 ]]; then
+		if (( ! epoch )); then
+			echo $pkgver-$pkgrel
+		else
+			echo $epoch:$pkgver-$pkgrel
+		fi
 	else
-		echo $1:$2-$3
+		for i in pkgver pkgrel epoch; do
+			local indirect="${i}_override"
+			eval $(declare -f package_$1 | sed -n "s/\(^[[:space:]]*$i=\)/${i}_override=/p")
+			[[ -z ${!indirect} ]] && eval ${indirect}=\"${!i}\"
+		done
+		if (( ! $epoch_override )); then
+			echo $pkgver_override-$pkgrel_override
+		else
+			echo $epoch_override:$pkgver_override-$pkgrel_override
+		fi
 	fi
+}
+
+##
+# usage: pkgver_equal( $pkgver1, $pkgver2 )
+##
+pkgver_equal() {
+	local left right
+
+	if [[ $1 = *-* && $2 = *-* ]]; then
+		# if both versions have a pkgrel, then they must be an exact match
+		[[ $1 = "$2" ]]
+	else
+		# otherwise, trim any pkgrel and compare the bare version.
+		[[ ${1%%-*} = "${2%%-*}" ]]
+	fi
+}
+
+##
+#  usage: find_cached_package( $pkgname, $pkgver, $arch )
+#
+#    $pkgver can be supplied with or without a pkgrel appended.
+#    If not supplied, any pkgrel will be matched.
+##
+find_cached_package() {
+	local searchdirs=("$PWD" "$PKGDEST") results=()
+	local targetname=$1 targetver=$2 targetarch=$3
+	local dir pkg pkgbasename pkgparts name ver rel arch size r results
+
+	for dir in "${searchdirs[@]}"; do
+		[[ -d $dir ]] || continue
+
+		for pkg in "$dir"/*.pkg.tar?(.?z); do
+			[[ -f $pkg ]] || continue
+
+			# avoid adding duplicates of the same inode
+			for r in "${results[@]}"; do
+				[[ $r -ef $pkg ]] && continue 2
+			done
+
+			# split apart package filename into parts
+			pkgbasename=${pkg##*/}
+			pkgbasename=${pkgbasename%.pkg.tar?(.?z)}
+
+			arch=${pkgbasename##*-}
+			pkgbasename=${pkgbasename%-"$arch"}
+
+			rel=${pkgbasename##*-}
+			pkgbasename=${pkgbasename%-"$rel"}
+
+			ver=${pkgbasename##*-}
+			name=${pkgbasename%-"$ver"}
+
+			if [[ $targetname = "$name" && $targetarch = "$arch" ]] &&
+					pkgver_equal "$targetver" "$ver-$rel"; then
+				results+=("$pkg")
+			fi
+		done
+	done
+
+	case ${#results[*]} in
+		0)
+			return 1
+			;;
+		1)
+			printf '%s\n' "$results"
+			return 0
+			;;
+		*)
+			error 'Multiple packages found:'
+			printf '\t%s\n' "${results[@]}" >&2
+			return 1
+	esac
 }
 
 script_lock() {
@@ -490,7 +588,7 @@ check_pkgfile_pkgbuild() {
 		[ $? -ge 1 ] && return 1
 	fi
 
-	local pkgbuild_ver="$(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}"; echo $(get_full_version ${epoch:-0} ${pkgver} ${pkgrel}) )"
+	local pkgbuild_ver="$(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}"; get_full_version ${_pkgname})"
 	[ "${pkgbuild_ver}" == "${_pkgver}" ] || return 1
 
 	local pkgbuild_names=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}"; echo ${pkgname[@]}))

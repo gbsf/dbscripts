@@ -30,6 +30,7 @@ TMPDIR="/var/tmp"
 ARCHES=(i686 x86_64)
 DBEXT=".db.tar.gz"
 FILESEXT=".files.tar.gz"
+# TODO make .?z part optional?
 PKGEXT=".pkg.tar.?z"
 SRCEXT=".src.tar.gz"
 

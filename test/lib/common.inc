@@ -1,9 +1,11 @@
 set -E
 
-. "$(dirname ${BASH_SOURCE[0]})/../../config"
+lib_dir="$(readlink -e $(dirname ${BASH_SOURCE[0]}))"
+
+. "${lib_dir}/../../config"
 # override the default TMPDIR
 TMPDIR="$(mktemp -d /tmp/${0##*/}.XXXXXXXXXX)"
-. "$(dirname ${BASH_SOURCE[0]})/../../db-functions"
+. "${lib_dir}/../../db-functions"
 
 signpkg() {
 	if [[ -r '/etc/makepkg.conf' ]]; then
@@ -29,13 +31,13 @@ oneTimeSetUp() {
 	local pkgversion
 	local build
 	pkgdir="$(mktemp -d /tmp/${0##*/}.XXXXXXXXXX)"
-	cp -Lr $(dirname ${BASH_SOURCE[0]})/../packages/* "${pkgdir}"
+	cp -Lr ${lib_dir}/../packages/* "${pkgdir}"
 	msg 'Building packages...'
 	for d in "${pkgdir}"/*; do
 		pushd $d >/dev/null
 		pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
 		pkgarch=($(. PKGBUILD; echo ${arch[@]}))
-		pkgversion=$(. PKGBUILD; echo $(get_full_version ${epoch:-0} ${pkgver} ${pkgrel}))
+		pkgversion=$(. PKGBUILD; echo $(get_full_version ${pkgname}))
 
 		build=true
 		for a in ${pkgarch[@]}; do
@@ -54,7 +56,7 @@ oneTimeSetUp() {
 			fi
 			for a in ${pkgarch[@]}; do
 				for p in ${pkgname[@]}; do
-					cp ${p}-${pkgversion}-${a}${PKGEXT} $(dirname ${BASH_SOURCE[0]})/../packages/${d##*/}
+					cp ${p}-${pkgversion}-${a}${PKGEXT} ${lib_dir}/../packages/${d##*/}
 				done
 			done
 		fi
@@ -72,9 +74,8 @@ setUp() {
 	local r
 	local a
 
-	[ -f "$(dirname ${BASH_SOURCE[0]})/../../config.local" ] && die "$(dirname ${BASH_SOURCE[0]})/../../config.local exists"
+	[ -f "${lib_dir}/../../config.local" ] && die "${lib_dir}/../../config.local exists"
 	TMP="$(mktemp -d /tmp/${0##*/}.XXXXXXXXXX)"
-	#msg "Using ${TMP}"
 
 	PKGREPOS=('core' 'extra' 'testing')
 	PKGPOOL='pool/packages'
@@ -94,16 +95,16 @@ setUp() {
 	svnadmin create "${TMP}/svn-packages-repo"
 	arch_svn checkout -q "file://${TMP}/svn-packages-repo" "${TMP}/svn-packages-copy"
 
-	for p in "$(dirname ${BASH_SOURCE[0]})"/../packages/*; do
+	for p in "${lib_dir}"/../packages/*; do
 		pkg=${p##*/}
 		mkdir -p "${TMP}/svn-packages-copy/${pkg}"/{trunk,repos}
-		cp "${p}"/* "${TMP}/svn-packages-copy"/${pkg}/trunk/
-		rm -f "${TMP}/svn-packages-copy"/${pkg}/trunk/*${PKGEXT}
+		# Copy all but packages
+		cp "${p}"/!(*${PKGEXT}) "${TMP}/svn-packages-copy"/${pkg}/trunk/
 		arch_svn add -q "${TMP}/svn-packages-copy"/${pkg}
 		arch_svn commit -q -m"initial commit of ${pkg}" "${TMP}/svn-packages-copy"
 	done
 
-	cat <<eot > "$(dirname ${BASH_SOURCE[0]})/../../config.local"
+	cat <<eot > "${lib_dir}/../../config.local"
 	FTP_BASE="${TMP}/ftp"
 	SVNREPO="file://${TMP}/svn-packages-repo"
 	HISTORYREPO="/${TMP}/history-repo"
@@ -119,12 +120,12 @@ setUp() {
 	SOURCE_CLEANUP_DRYRUN=false
 	REQUIRE_SIGNATURE=true
 eot
-	. "$(dirname ${BASH_SOURCE[0]})/../../config"
+	. "${lib_dir}/../../config"
 }
 
 tearDown() {
 	rm -rf "${TMP}"
-	rm -f "$(dirname ${BASH_SOURCE[0]})/../../config.local"
+	rm -f "${lib_dir}/../../config.local"
 	echo
 }
 
@@ -133,8 +134,8 @@ archreleasePackage() {
 	local pkgbase=$2
 	local arch=$3
 	pushd "${TMP}/svn-packages-copy"/${pkgbase}/trunk/ >/dev/null
-	# TODO: pull archrelease and commitpkg in dbscripts so this can be done cleaner?
-	~/git/arch/devtools/archrelease ${repo}-${arch} >/dev/null 2>&1
+
+	"${lib_dir}"/../../archrelease >/dev/null 2>&1
 
 	popd >/dev/null
 }
@@ -151,7 +152,7 @@ releasePackage() {
 
 	archreleasePackage "${repo}" "${pkgbase}" "${arch}"
 	pushd "${TMP}/svn-packages-copy"/${pkgbase}/trunk/ >/dev/null
-	pkgver=$(. PKGBUILD; echo $(get_full_version ${epoch:-0} ${pkgver} ${pkgrel}))
+	pkgver=$(. PKGBUILD; get_full_version ${pkgname})
 	pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
 
 	popd >/dev/null
