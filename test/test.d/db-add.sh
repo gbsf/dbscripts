@@ -49,4 +49,22 @@ testAddMultiplePackages() {
 	done
 }
 
+testAddAnyArchPackages() {
+	local pkgs=('pkg-any-a' 'pkg-any-b')
+	local pkgbase
+
+	add_pkgs=()
+	for pkgbase in ${pkgs[@]}; do
+		archreleasePackage extra "${pkgbase}" any
+		cp "${pkgdir}/${pkgbase}/${pkgbase}-1-1-any.pkg.tar.xz" "${TMP}"
+		signpkg "${TMP}/${pkgbase}-1-1-any.pkg.tar.xz"
+		add_pkgs[${#add_pkgs[*]}]="${TMP}/${pkgbase}-1-1-any.pkg.tar.xz"
+	done
+	"${curdir}"/../../db-add extra all ${add_pkgs[@]}
+
+	for pkgbase in ${pkgs[@]}; do
+		checkAnyPackageDB extra ${pkgbase}-1-1-any.pkg.tar.xz
+	done
+}
+
 . "${curdir}/../lib/shunit2"
