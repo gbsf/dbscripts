@@ -2,6 +2,9 @@ set -E
 
 lib_dir="$(readlink -e $(dirname ${BASH_SOURCE[0]}))"
 
+# Turn on debugging
+export DBSCRIPTS_DEBUG=1
+
 . "${lib_dir}/../../config"
 # override the default TMPDIR
 TMPDIR="$(mktemp -d /tmp/${0##*/}.XXXXXXXXXX)"

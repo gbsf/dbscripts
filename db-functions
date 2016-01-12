@@ -40,16 +40,17 @@ declare -a HISTORY_add_files=()
 declare -a HISTORY_remove_files=()
 
 # check if messages are to be printed using color
-unset ALL_OFF BOLD BLUE GREEN RED YELLOW
+unset ALL_OFF BOLD BLUE CYAN GREEN RED YELLOW
 if [[ -t 2 ]]; then
 	ALL_OFF="$(tput sgr0)"
 	BOLD="$(tput bold)"
 	BLUE="${BOLD}$(tput setaf 4)"
+	CYAN="${BOLD}$(tput setaf 6)"
 	GREEN="${BOLD}$(tput setaf 2)"
 	RED="${BOLD}$(tput setaf 1)"
 	YELLOW="${BOLD}$(tput setaf 3)"
 fi
-readonly ALL_OFF BOLD BLUE GREEN RED YELLOW
+readonly ALL_OFF BOLD BLUE CYAN GREEN RED YELLOW
 
 plain() {
 	local mesg=$1; shift
@@ -73,7 +74,12 @@ warning() {
 
 error() {
 	local mesg=$1; shift
-	printf "${RED}==> ERROR${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
+	printf "${RED}==> ERROR:${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
+}
+
+debug() {
+	local mesg=$1; shift
+	[[ ${DBSCRIPTS_DEBUG} -eq 1 ]] && printf "${CYAN}==> DEBUG:${ALL_OFF}${BOLD} ${mesg}${ALL_OFF}\n" "$@" >&2
 }
 
 stat_busy() {
@@ -132,8 +138,6 @@ get_full_version() {
 # usage: pkgver_equal( $pkgver1, $pkgver2 )
 ##
 pkgver_equal() {
-	local left right
-
 	if [[ $1 = *-* && $2 = *-* ]]; then
 		# if both versions have a pkgrel, then they must be an exact match
 		[[ $1 = "$2" ]]
@@ -276,6 +280,8 @@ repo_lock () {
 	local _lockblock
 	local _owner
 
+	debug "Locking repo [${1}] (${2})"
+
 	# This is the lock file used by repo-add and repo-remove
 	if [ -f "${DBLOCKFILE}" ]; then
 		error "Repo [${1}] (${2}) is already locked by repo-{add,remove} process $(cat $DBLOCKFILE)"
@@ -311,6 +317,8 @@ repo_lock () {
 }
 
 repo_unlock () { #repo_unlock <repo-name> <arch>
+	debug "Unlocking repo [${1}] (${2})"
+
 	local LOCKDIR="$TMPDIR/.repolock.$1.$2"
 	if [ ! -d "$LOCKDIR" ]; then
 		warning "Repo lock [${1}] (${2}) was not locked!"
@@ -723,6 +731,7 @@ arch_history_commit() {
 			did_work=1
 		fi
 		if ((did_work)); then
+			debug "Commiting to history: \"$1\""
 			git commit -q -m "$1"
 		fi
 	popd >/dev/null
