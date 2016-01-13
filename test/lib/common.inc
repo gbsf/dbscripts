@@ -66,6 +66,17 @@ oneTimeSetUp() {
 
 			cp *${PKGEXT} ${lib_dir}/../packages/${d##*/}
 		fi
+
+		if ${REQUIRE_SIGNATURE}; then
+			for pkg in *${PKGEXT}; do
+				if [ ! -f "${pkg}.sig" ]; then
+					signpkg ${pkg}
+					cp ${pkg}.sig ${lib_dir}/../packages/${d##*/}
+				fi
+			done
+
+		fi
+
 		popd >/dev/null
 	done
 }
@@ -104,8 +115,8 @@ setUp() {
 	for p in "${lib_dir}"/../packages/*; do
 		pkg=${p##*/}
 		mkdir -p "${TMP}/svn-packages-copy/${pkg}"/{trunk,repos}
-		# Copy all but packages
-		cp "${p}"/!(*${PKGEXT}) "${TMP}/svn-packages-copy"/${pkg}/trunk/
+		# copy all but packages
+		cp "${p}"/!(*${PKGEXT}?(.sig)) "${TMP}/svn-packages-copy"/${pkg}/trunk/
 		arch_svn add -q "${TMP}/svn-packages-copy"/${pkg}
 		arch_svn commit -q -m"initial commit of ${pkg}" "${TMP}/svn-packages-copy"
 	done
@@ -162,7 +173,7 @@ releasePackage() {
 	pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
 
 	popd >/dev/null
-	cp "${pkgdir}/${pkgbase}"/*-${pkgver}-${arch}${PKGEXT} "${STAGING}"/${repo}/
+	cp "${pkgdir}/${pkgbase}"/*-${pkgver}-${arch}${PKGEXT}?(.sig) "${STAGING}"/${repo}/
 
 	if [[ $arch == "any" ]]; then
 		arches=("${ARCHES[@]}")
@@ -180,14 +191,6 @@ releasePackage() {
 			ln -sr "${STAGING}/${repo}/${pkgfile}" "${STAGING}/${repo}/${_arch}/${pkgfile}"
 		done
 	done
-
-	if ${REQUIRE_SIGNATURE}; then
-		for a in ${arch[@]}; do
-			for p in ${pkgname[@]}; do
-				signpkg "${STAGING}"/${repo}/${p}-${pkgver}-${a}${PKGEXT}
-			done
-		done
-	fi
 }
 
 checkAnyPackageDB() {

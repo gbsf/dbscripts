@@ -12,8 +12,7 @@ testAddSimplePackages() {
 	for pkgbase in ${pkgs[@]}; do
 		for arch in ${arches[@]}; do
 			archreleasePackage extra "${pkgbase}" "${arch}"
-			cp "${pkgdir}/${pkgbase}/${pkgbase}-1-1-${arch}.pkg.tar.xz" "${TMP}"
-			signpkg "${TMP}/${pkgbase}-1-1-${arch}.pkg.tar.xz"
+			cp "${pkgdir}"/${pkgbase}/${pkgbase}-1-1-${arch}.pkg.tar.xz{,.sig} "${TMP}"
 			"${curdir}"/../../db-add extra ${arch} "${TMP}/${pkgbase}-1-1-${arch}.pkg.tar.xz"
 		done
 	done
@@ -35,8 +34,7 @@ testAddMultiplePackages() {
 		add_pkgs=()
 		for pkgbase in ${pkgs[@]}; do
 			archreleasePackage extra "${pkgbase}" "${arch}"
-			cp "${pkgdir}/${pkgbase}/${pkgbase}-1-1-${arch}.pkg.tar.xz" "${TMP}"
-			signpkg "${TMP}/${pkgbase}-1-1-${arch}.pkg.tar.xz"
+			cp "${pkgdir}"/${pkgbase}/${pkgbase}-1-1-${arch}.pkg.tar.xz{,.sig} "${TMP}"
 			add_pkgs[${#add_pkgs[*]}]="${TMP}/${pkgbase}-1-1-${arch}.pkg.tar.xz"
 		done
 		"${curdir}"/../../db-add extra ${arch} ${add_pkgs[@]}
@@ -56,8 +54,7 @@ testAddAnyArchPackages() {
 	add_pkgs=()
 	for pkgbase in ${pkgs[@]}; do
 		archreleasePackage extra "${pkgbase}" any
-		cp "${pkgdir}/${pkgbase}/${pkgbase}-1-1-any.pkg.tar.xz" "${TMP}"
-		signpkg "${TMP}/${pkgbase}-1-1-any.pkg.tar.xz"
+		cp "${pkgdir}"/${pkgbase}/${pkgbase}-1-1-any.pkg.tar.xz{,.sig} "${TMP}"
 		add_pkgs[${#add_pkgs[*]}]="${TMP}/${pkgbase}-1-1-any.pkg.tar.xz"
 	done
 	"${curdir}"/../../db-add extra all ${add_pkgs[@]}
