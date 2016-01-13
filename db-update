@@ -79,43 +79,29 @@ for repo in ${repos[@]}; do
 		_pkgver=$(getpkgver "$pkgfile")
 		_pkgarch=$(getpkgarch "$pkgfile")
 
-		ret=0
-		if [ ! -f "$WORKDIR/pkgbuilds/$repo-$_pkgarch/$_pkgbase-$_pkgver" ]; then
-			mkdir -p "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}"
-			get_file_from_pkgrepo "$_pkgbase" "$_pkgver" PKGBUILD \
-				> "$WORKDIR/pkgbuilds/$repo-$_pkgarch/$_pkgbase-$_pkgver"
-			ret=$?
-		fi
-		if [ $ret -ge 1 ]; then
-			warning "PKGBUILD not found for $_pkgbase-$_pkgver. Did you archrelease it?"
-		else
-			_pkgnames=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_pkgver}"; echo ${pkgname[@]}))
-			_pkgentry=($(arch_history_fetch $repo $_pkgname $_pkgarch))
-			if [ "${#_pkgentry[@]}" -eq 2 ]; then
-				_db_ver=${_pkgentry[1]}
+		get_pkgbuild $repo $_pkgbase $_pkgarch $_pkgver || die "PKGBUILD not found for $_pkgbase-$_pkgver"
 
-				if [ ! -f "$WORKDIR/pkgbuilds/$repo-$_pkgarch/$_pkgbase-$_db_ver" ]; then
-					mkdir -p "${WORKDIR}/pkgbuilds/${repo}-${_db_arch}"
-					get_file_from_pkgrepo "$_pkgbase" "$_db_ver" PKGBUILD \
-						> "$WORKDIR/pkgbuilds/$repo-$_pkgarch/$_pkgbase-$_db_ver"
-					[ $? -ge 1 ] && die "PKGBUILD missing for $_pkgbase-$_db_ver"
-				fi
+		_pkgnames=($(. "$WORKDIR/pkgbuilds/$repo-$_pkgarch/$_pkgbase-$_pkgver"; echo ${pkgname[@]}))
+		_pkgentry=($(arch_history_fetch $repo $_pkgname $_pkgarch))
+		if [ "${#_pkgentry[@]}" -eq 2 ]; then
+			_db_ver=${_pkgentry[1]}
 
-				_db_names=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_db_ver}"; echo ${pkgname[@]}))
+			get_pkgbuild $repo $_pkgbase $_pkgarch $_pkgver || die "PKGBUILD not found for $_pkgbase-$_db_ver"
 
-				# duplicate ${_pkgnames[@]} to make uniq_array only return entries only found in ${_db_names[@]}
-				for _pkg in $(uniq_array ${_pkgnames[@]} ${_pkgnames[@]} ${_db_names[@]}); do
-					_rarchs=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_db_ver}"; get_arch))
-					for _rarch in ${_rarchs[@]}; do
-						pkgs_to_remove[$_pkg-$_rarch]=''
-					done
+			_db_names=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_db_ver}"; echo ${pkgname[@]}))
+
+			# duplicate ${_pkgnames[@]} to make uniq_array only return entries only found in ${_db_names[@]}
+			for _pkg in $(uniq_array ${_pkgnames[@]} ${_pkgnames[@]} ${_db_names[@]}); do
+				_rarchs=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_db_ver}"; get_arch))
+				for _rarch in ${_rarchs[@]}; do
+					pkgs_to_remove[$_pkg-$_rarch]=''
 				done
-			fi
-
-			for _pkg in ${_pkgnames[@]}; do
-				pkgs_should_push[$_pkg]=$_pkgver
 			done
 		fi
+
+		for _pkg in ${_pkgnames[@]}; do
+			pkgs_should_push[$_pkg]=$_pkgver
+		done
 
 		pkgs_to_push[$_pkgname]=$_pkgver
 		arch_add_to_pool "$pkgfile"

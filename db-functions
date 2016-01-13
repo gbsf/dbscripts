@@ -616,12 +616,7 @@ check_pkgfile_pkgbuild() {
 	local _pkgarch="$(getpkgarch ${pkgfile})"
 	[ $? -ge 1 ] && return 1
 
-	if [ ! -f "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_pkgver}" ]; then
-		mkdir -p "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}"
-		get_file_from_pkgrepo "$_pkgbase" "$_pkgver" PKGBUILD \
-			> "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_pkgver}"
-		[ $? -ge 1 ] && return 1
-	fi
+	get_pkgbuild ${repo} ${_pkgbase} ${_pkgarch} ${_pkgver} || return 1
 
 	local pkgbuild_ver="$(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_pkgver}"; get_full_version ${_pkgname})"
 	[ "${pkgbuild_ver}" == "${_pkgver}" ] || return 1
@@ -807,6 +802,17 @@ pkgentry_from_db() {
 	done
 
 	return 1
+}
+
+get_pkgbuild() {
+	repo=$1
+	pkgbase=$2
+	pkgarch=$3
+	pkgver=$4
+	[ -f "$WORKDIR/pkgbuilds/$repo-$pkgarch/$pkgbase-$pkgver" ] && return
+	mkdir -p "$WORKDIR/pkgbuilds/$repo-$pkgarch"
+	get_file_from_pkgrepo "$pkgbase" "$pkgver" PKGBUILD \
+		> "$WORKDIR/pkgbuilds/$repo-$pkgarch/$pkgbase-$pkgver"
 }
 
 # get_file_from_pkgrepo pkgbase tag filename
