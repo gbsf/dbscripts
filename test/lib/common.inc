@@ -124,7 +124,7 @@ setUp() {
 	cat <<eot > "${lib_dir}/../../config.local"
 	FTP_BASE="${TMP}/ftp"
 	SVNREPO="file://${TMP}/svn-packages-repo"
-	HISTORYREPO="/${TMP}/history-repo"
+	HISTORYREPO="${TMP}/history-repo"
 	PKGREPOS=(${PKGREPOS[@]})
 	PKGPOOL="${PKGPOOL}"
 	TESTING_REPO='testing'
@@ -173,7 +173,13 @@ releasePackage() {
 	pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
 
 	popd >/dev/null
-	cp "${pkgdir}/${pkgbase}"/*-${pkgver}-${arch}${PKGEXT}?(.sig) "${STAGING}"/${repo}/
+
+	declare -a to_copy
+	for name in ${pkgname[@]}; do
+		to_copy+=("${pkgdir}"/${pkgbase}/${name}-${pkgver}-${arch}${PKGEXT}{,.sig})
+	done
+
+	cp "${to_copy[@]}" "${STAGING}"/${repo}/
 
 	if [[ $arch == "any" ]]; then
 		arches=("${ARCHES[@]}")

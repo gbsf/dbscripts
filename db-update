@@ -67,12 +67,57 @@ for repo in ${repos[@]}; do
 	fi
 done
 
-# TODO: check if all packages of a splitpkg are being pushed (or if they already exist in the repo: foo-x86_64 foo-data, later push foo-i686)
+msg "Updating all packages in ${STAGING}"
 
-# TODO: detect if a pkgname has been removed from a split package and clean up the repo
-
+declare -A pkgs_to_push
+declare -A pkgs_should_push
+declare -A pkgs_to_remove
 for repo in ${repos[@]}; do
 	for pkgfile in $(getpkgfiles "${STAGING}/${repo}/"*${PKGEXT} 2>/dev/null); do
+		_pkgname=$(getpkgname "$pkgfile")
+		_pkgbase=$(getpkgbase "$pkgfile")
+		_pkgver=$(getpkgver "$pkgfile")
+		_pkgarch=$(getpkgarch "$pkgfile")
+
+		ret=0
+		if [ ! -f "$WORKDIR/pkgbuilds/$repo-$_pkgarch/$_pkgbase-$_pkgver" ]; then
+			mkdir -p "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}"
+			get_file_from_pkgrepo "$_pkgbase" "$_pkgver" PKGBUILD \
+				> "$WORKDIR/pkgbuilds/$repo-$_pkgarch/$_pkgbase-$_pkgver"
+			ret=$?
+		fi
+		if [ $ret -ge 1 ]; then
+			warning "PKGBUILD not found for $_pkgbase-$_pkgver. Did you archrelease it?"
+		else
+			_pkgnames=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_pkgver}"; echo ${pkgname[@]}))
+			_pkgentry=($(arch_history_fetch $repo $_pkgname $_pkgarch))
+			if [ "${#_pkgentry[@]}" -eq 2 ]; then
+				_db_ver=${_pkgentry[1]}
+
+				if [ ! -f "$WORKDIR/pkgbuilds/$repo-$_pkgarch/$_pkgbase-$_db_ver" ]; then
+					mkdir -p "${WORKDIR}/pkgbuilds/${repo}-${_db_arch}"
+					get_file_from_pkgrepo "$_pkgbase" "$_db_ver" PKGBUILD \
+						> "$WORKDIR/pkgbuilds/$repo-$_pkgarch/$_pkgbase-$_db_ver"
+					[ $? -ge 1 ] && die "PKGBUILD missing for $_pkgbase-$_db_ver"
+				fi
+
+				_db_names=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_db_ver}"; echo ${pkgname[@]}))
+
+				# duplicate ${_pkgnames[@]} to make uniq_array only return entries only found in ${_db_names[@]}
+				for _pkg in $(uniq_array ${_pkgnames[@]} ${_pkgnames[@]} ${_db_names[@]}); do
+					_rarchs=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_db_ver}"; get_arch))
+					for _rarch in ${_rarchs[@]}; do
+						pkgs_to_remove[$_pkg-$_rarch]=''
+					done
+				done
+			fi
+
+			for _pkg in ${_pkgnames[@]}; do
+				pkgs_should_push[$_pkg]=$_pkgver
+			done
+		fi
+
+		pkgs_to_push[$_pkgname]=$_pkgver
 		arch_add_to_pool "$pkgfile"
 	done
 
@@ -96,9 +141,27 @@ for repo in ${repos[@]}; do
 			continue
 		fi
 
+		for pkg in $(uniq_array ${!pkgs_to_push[@]} ${!pkgs_to_push[@]} ${!pkgs_should_push[@]}); do
+			pkgentry=($(arch_history_fetch $repo $pkg $pkgarch))
+			# check if already released first
+			if [ ${#pkgentry[@]} -ne 2 ] || [ ${pkgentry[1]} -ne ${pkgs_should_push[$pkg]} ]; then
+				warning "Missing split package $pkg-$pkgarch. Did you forget to commitpkg?"
+			fi
+		done
+
 		arch_db_add $repo "$pkgarch" "${pkgs_to_add[@]}"
 	done
 done
+
+if [ ${#pkgs_to_remove[@]} -gt 0 ]; then
+	msg "Cleaning from db removed split packages:"
+	for rem in ${!pkgs_to_remove[@]}; do
+		pkg=${rem%-*}
+		arch=${rem##*-}
+		msg2 "$arch\t$pkg"
+		arch_db_remove $repo $arch $pkg
+	done
+fi
 
 arch_history_commit "db-update: ${repos[*]}"
 
