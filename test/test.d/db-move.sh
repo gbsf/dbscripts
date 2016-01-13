@@ -106,12 +106,12 @@ testMoveSplitPackages() {
 	"${curdir}"/../../db-move testing extra all pkg-split-a1 pkg-split-a2
 
 	for arch in ${arches[@]}; do
-		for pkg in "${pkgdir}/pkg-split-a"/*-${arch}${PKGEXT}; do
+		for pkg in "${pkgdir}/pkg-split-a"/*-1-1-${arch}${PKGEXT}; do
 			checkPackage extra ${pkg##*/} ${arch}
 		done
 	done
 	for arch in ${arches[@]}; do
-		for pkg in "${pkgdir}/pkg-split-b"/*-${arch}${PKGEXT}; do
+		for pkg in "${pkgdir}/pkg-split-b"/*-1-1-${arch}${PKGEXT}; do
 			checkPackage testing ${pkg##*/} ${arch}
 		done
 	done

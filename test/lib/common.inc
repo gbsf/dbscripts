@@ -52,16 +52,19 @@ oneTimeSetUp() {
 		if ! ${build}; then
 			if [ "${pkgarch[0]}" == 'any' ]; then
 				sudo extra-x86_64-build || die 'extra-x86_64-build failed'
+				sed 's/pkgrel=1/pkgrel=2/g' -i PKGBUILD
+				sudo extra-x86_64-build || die 'extra-x86_64-build failed'
 			else
 				for a in ${pkgarch[@]}; do
 					sudo extra-${a}-build || die "extra-${a}-build failed"
 				done
-			fi
-			for a in ${pkgarch[@]}; do
-				for p in ${pkgname[@]}; do
-					cp ${p}-${pkgversion}-${a}${PKGEXT} ${lib_dir}/../packages/${d##*/}
+				sed 's/pkgrel=1/pkgrel=2/g' -i PKGBUILD
+				for a in ${pkgarch[@]}; do
+					sudo extra-${a}-build || die "extra-${a}-build failed"
 				done
-			done
+			fi
+
+			cp *${PKGEXT} ${lib_dir}/../packages/${d##*/}
 		fi
 		popd >/dev/null
 	done

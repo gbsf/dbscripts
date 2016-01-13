@@ -112,7 +112,7 @@ testCleanupSplitPackages() {
 			[ -f "${FTP_BASE}/${repo}/os/${arch}/${pkg}" ] && fail "${repo}/os/${arch}/${pkg} found"
 		done
 
-		for pkg in "${pkgdir}/${pkgs[1]}"/*-${arch}${PKGEXT}; do
+		for pkg in "${pkgdir}/${pkgs[1]}"/*-1-1-${arch}${PKGEXT}; do
 			checkPackage extra ${pkg##*/} ${arch}
 		done
 	done
