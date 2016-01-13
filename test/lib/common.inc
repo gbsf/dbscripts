@@ -69,7 +69,8 @@ oneTimeSetUp() {
 
 		if ${REQUIRE_SIGNATURE}; then
 			for pkg in *${PKGEXT}; do
-				if [ ! -f "${pkg}.sig" ]; then
+				if [ ! -f "${pkg}.sig" ] || ! pacman-key -v "${pkg}.sig" >/dev/null 2>&1; then
+					rm -f "${pkg}.sig"
 					signpkg ${pkg}
 					cp ${pkg}.sig ${lib_dir}/../packages/${d##*/}
 				fi
