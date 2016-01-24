@@ -6,7 +6,7 @@ curdir=$(readlink -e $(dirname $0))
 testRemovePackages() {
 	local arches=('i686' 'x86_64')
 	local pkgs=('pkg-simple-a' 'pkg-simple-b' 'pkg-split-a' 'pkg-split-b' 'pkg-simple-epoch')
-	local pkgnames=('pkg-simple-a' 'pkg-simple-b' 'pkg-split-a'{1,2} 'pkg-split-b'{1,2} 'pkg-simple-epoch')
+	local pkgnames=('pkg-simple-a' 'pkg-simple-b' 'pkg-split-a'{1,2} 'pkg-split-b'{1,2,3} 'pkg-simple-epoch')
 	local pkgbase
 	local arch
 
@@ -40,7 +40,7 @@ testRemovePackages() {
 testRemoveMultiplePackages() {
 	local arches=('i686' 'x86_64')
 	local pkgs=('pkg-simple-a' 'pkg-simple-b' 'pkg-split-a' 'pkg-split-b' 'pkg-simple-epoch')
-	local pkgnames=('pkg-simple-a' 'pkg-simple-b' 'pkg-split-a'{1,2} 'pkg-split-b'{1,2} 'pkg-simple-epoch')
+	local pkgnames=('pkg-simple-a' 'pkg-simple-b' 'pkg-split-a'{1,2} 'pkg-split-b'{1,2,3} 'pkg-simple-epoch')
 	local pkgbase
 	local arch
 

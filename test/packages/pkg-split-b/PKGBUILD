@@ -1,5 +1,5 @@
 pkgbase=pkg-split-b
-pkgname=('pkg-split-b1' 'pkg-split-b2')
+pkgname=('pkg-split-b1' 'pkg-split-b2' 'pkg-split-b3')
 pkgver=1
 pkgrel=1
 pkgdesc="A split package called ${pkgbase}"
@@ -26,4 +26,9 @@ package_pkg-split-b1() {
 package_pkg-split-b2() {
 	cd ${srcdir}
 	make install DESTDIR=${pkgdir} DESTBIN=${pkgname[1]}
+}
+
+package_pkg-split-b3() {
+	cd ${srcdir}
+	make install DESTDIR=${pkgdir} DESTBIN=${pkgname[2]}
 }
