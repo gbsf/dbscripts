@@ -86,7 +86,7 @@ for repo in ${repos[@]}; do
 		if [ "${#_pkgentry[@]}" -eq 2 ]; then
 			_db_ver=${_pkgentry[1]}
 
-			get_pkgbuild $repo $_pkgbase $_pkgarch $_pkgver || die "PKGBUILD not found for $_pkgbase-$_db_ver"
+			get_pkgbuild $repo $_pkgbase $_pkgarch $_db_ver || die "PKGBUILD not found for $_pkgbase-$_db_ver"
 
 			_db_names=($(. "${WORKDIR}/pkgbuilds/${repo}-${_pkgarch}/${_pkgbase}-${_db_ver}"; echo ${pkgname[@]}))
 
