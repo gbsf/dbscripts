@@ -4,13 +4,13 @@
 . "$(dirname $0)/db-functions"
 
 if [ $# -lt 3 ]; then
-	msg "usage: ${0##*/} <repo> <arch> <pkgname|pkgbase> ..."
+	msg "usage: ${0##*/} <repo> <arch> <pkgname> ..."
 	exit 1
 fi
 
 repo="$1"
 arch="$2"
-pkgbases=(${@:3})
+pkgnames=(${@:3})
 
 ftppath="$FTP_BASE/$repo/os"
 
@@ -29,17 +29,51 @@ for tarch in ${tarches[@]}; do
 done
 
 remove_pkgs=()
-for pkgbase in ${pkgbases[@]}; do
-	msg "Removing $pkgbase from [${repo}-${arch}]..."
-	# TODO: detect split packages; do we even want them to be removed automatically?
-	remove_pkgs[${#remove_pkgs[*]}]=$pkgbase
+for pkgname in ${pkgnames[@]}; do
+	msg "Removing $pkgname from [$repo] ($arch)..."
+	pkgentry=$(pkgentry_from_db $repo ${tarches[0]} $pkgname)
+
+	# grab pkgrel first
+	pkgver="${pkgentry##*-}"
+	pkgentry="${pkgentry%-*}"
+
+	pkgver="${pkgentry##*-}-$pkgver"
+	pkgbase=$pkgname
+
+	# expand name
+	pkg=$(echo "$ftppath/${tarches[0]}/$pkgname-$pkgver"*${PKGEXT})
+
+	if [ -f "$pkg" ]; then
+		pkgbase=$(getpkgbase "$pkg")
+		pkgarch=$(getpkgarch "$pkg")
+	else
+		warning "Package $pkgname not found in repo"
+		continue
+	fi
+
+	get_pkgbuild $repo $pkgbase $pkgver
+	pkgs=($(. "$WORKDIR/pkgbuilds/$repo/$pkgbase-$pkgver"; echo "${pkgname[@]}"))
+
+	extrapkgs=($(uniq_array $pkgname ${remove_pkgs[@]} ${remove_pkgs[@]} ${pkgs[@]}))
+	if [[ ${#extrapkgs[@]} > 0 ]]; then
+		msg "Removing split packages:"
+		for extrapkg in ${extrapkgs[@]}; do
+			msg2 $extrapkg
+		done
+	fi
+
+	remove_pkgs+=(${pkgs[@]})
 done
 
-for tarch in ${tarches[@]}; do
-	arch_db_remove "${repo}" "${tarch}" ${remove_pkgs[@]}
-done
+remove_pkgs=($(dedup_array "${remove_pkgs[@]}"))
 
-arch_history_commit "db-remove: ${remove_pkgs[*]}"
+if [[ ${#remove_pkgs[@]} > 0 ]]; then
+	for tarch in ${tarches[@]}; do
+		arch_db_remove "${repo}" "${tarch}" ${remove_pkgs[@]}
+	done
+
+	arch_history_commit "db-remove: ${remove_pkgs[*]}"
+fi
 
 for tarch in ${tarches[@]}; do
 	repo_unlock $repo $tarch
