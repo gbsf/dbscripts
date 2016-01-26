@@ -148,9 +148,7 @@ tearDown() {
 }
 
 archreleasePackage() {
-	local repo=$1
-	local pkgbase=$2
-	local arch=$3
+	local pkgbase=$1
 	pushd "${TMP}/svn-packages-copy"/${pkgbase}/trunk/ >/dev/null
 
 	"${lib_dir}"/../../archrelease >/dev/null 2>&1
@@ -168,7 +166,7 @@ releasePackage() {
 	local pkgname
 	local arches
 
-	archreleasePackage "${repo}" "${pkgbase}" "${arch}"
+	archreleasePackage "${pkgbase}"
 	pushd "${TMP}/svn-packages-copy"/${pkgbase}/trunk/ >/dev/null
 	pkgver=$(. PKGBUILD; get_full_version ${pkgname})
 	pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
