@@ -31,19 +31,12 @@ done
 remove_pkgs=()
 for pkgname in ${pkgnames[@]}; do
 	msg "Removing $pkgname from [$repo] ($arch)..."
-	pkgentry=$(pkgentry_from_db $repo ${tarches[0]} $pkgname)
-
-	# grab pkgrel first
-	pkgver="${pkgentry##*-}"
-	pkgentry="${pkgentry%-*}"
-
-	pkgver="${pkgentry##*-}-$pkgver"
-	pkgbase=$pkgname
+	pkgver=$(pkgver_from_db $repo ${tarches[0]} $pkgname)
 
 	# expand name
 	pkg=$(echo "$ftppath/${tarches[0]}/$pkgname-$pkgver"*${PKGEXT})
 
-	if [ -f "$pkg" ]; then
+	if [ -n "$pkgver" ] && [ -f "$pkg" ]; then
 		pkgbase=$(getpkgbase "$pkg")
 		pkgarch=$(getpkgarch "$pkg")
 	else

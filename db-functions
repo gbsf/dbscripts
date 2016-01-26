@@ -812,6 +812,18 @@ pkgentry_from_db() {
 	return 1
 }
 
+pkgver_from_db() {
+	local pkgentry
+	local pkgver
+
+	pkgentry="$(pkgentry_from_db $1 $2 $3)" || return 1
+	pkgver="${pkgentry##*-}"
+	pkgentry=${pkgentry%-*}
+	pkgver="${pkgentry##*-}-$pkgver"
+
+	echo $pkgver
+}
+
 get_pkgbuild() {
 	repo=$1
 	pkgbase=$2
