@@ -749,23 +749,6 @@ arch_history_remove() {
 	HISTORY_remove_files=("${HISTORY_remove_files[@]}" "$history_file")
 }
 
-arch_history_fetch() {
-	local repo="$1"
-	local pkgname="$2"
-	local tarch="$3"
-
-	if [ "$tarch" = "any" ]; then
-		# choose one arch
-		tarch=${ARCHES[0]}
-	fi
-
-	local history_file="$HISTORYREPO/$repo/$tarch/$pkgname"
-
-	[[ -f "$history_file" ]] || return 1
-
-	cat $history_file
-}
-
 arch_history_commit() {
 	pushd "$HISTORYREPO" >/dev/null
 		did_work=0

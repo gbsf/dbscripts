@@ -69,9 +69,9 @@ done
 
 msg "Updating all packages in ${STAGING}"
 
-declare -A pkgs_to_push
+declare -a pkgs_to_remove
+declare -a pkgs_to_push
 declare -A pkgs_should_push
-declare -A pkgs_to_remove
 for repo in ${repos[@]}; do
 	for pkgfile in $(getpkgfiles "${STAGING}/${repo}/"*${PKGEXT} 2>/dev/null); do
 		_pkgname=$(getpkgname "$pkgfile")
@@ -79,32 +79,35 @@ for repo in ${repos[@]}; do
 		_pkgver=$(getpkgver "$pkgfile")
 		_pkgarch=$(getpkgarch "$pkgfile")
 
+		msg2 "$repo\t$_pkgarch\t$_pkgname\t$_pkgver"
+
+		pkgs_to_push+=($_pkgname)
+		arch_add_to_pool "$pkgfile"
+
 		get_pkgbuild $repo $_pkgbase $_pkgver || die "PKGBUILD not found for $_pkgbase-$_pkgver"
-
 		_pkgnames=($(. "$WORKDIR/pkgbuilds/$repo/$_pkgbase-$_pkgver"; echo ${pkgname[@]}))
-		_pkgentry=($(arch_history_fetch $repo $_pkgname $_pkgarch))
-		if [ "${#_pkgentry[@]}" -eq 2 ]; then
-			_db_ver=${_pkgentry[1]}
 
-			get_pkgbuild $repo $_pkgbase $_db_ver || die "PKGBUILD not found for $_pkgbase-$_db_ver"
-
-			_db_names=($(. "${WORKDIR}/pkgbuilds/${repo}/${_pkgbase}-${_db_ver}"; echo ${pkgname[@]}))
-
-			# duplicate ${_pkgnames[@]} to make uniq_array only return entries only found in ${_db_names[@]}
-			for _pkg in $(uniq_array ${_pkgnames[@]} ${_pkgnames[@]} ${_db_names[@]}); do
-				_rarchs=($(. "${WORKDIR}/pkgbuilds/${repo}/${_pkgbase}-${_db_ver}"; get_arch))
-				for _rarch in ${_rarchs[@]}; do
-					pkgs_to_remove[$_pkg-$_rarch]=''
-				done
-			done
+		if [ "$_pkgarch" == "any" ]; then
+			_pkgarch=${ARCHES[0]}
 		fi
+
+		_db_ver=($(pkgver_from_db $repo $_pkgarch $_pkgname)) || continue # if not in db, skip rest of logic
+
+		get_pkgbuild $repo $_pkgbase $_db_ver || die "PKGBUILD not found for $_pkgbase-$_db_ver"
+
+		_db_names=($(. "$WORKDIR/pkgbuilds/$repo/$_pkgbase-$_db_ver"; echo ${pkgname[@]}))
+
+		# duplicate pkgnames to make uniq_array only return entries only found in db_names
+		for _pkg in $(uniq_array ${_pkgnames[@]} ${_pkgnames[@]} ${_db_names[@]}); do
+			_rarchs=($(. "$WORKDIR/pkgbuilds/$repo/$_pkgbase-$_db_ver"; get_arch $_pkg))
+			for _rarch in ${_rarchs[@]}; do
+				pkgs_to_remove+=($repo/$_pkg/$_rarch)
+			done
+			done
 
 		for _pkg in ${_pkgnames[@]}; do
 			pkgs_should_push[$_pkg]=$_pkgver
 		done
-
-		pkgs_to_push[$_pkgname]=$_pkgver
-		arch_add_to_pool "$pkgfile"
 	done
 
 	for file in "$STAGING/$repo"/*/*; do
@@ -127,10 +130,10 @@ for repo in ${repos[@]}; do
 			continue
 		fi
 
-		for pkg in $(uniq_array ${!pkgs_to_push[@]} ${!pkgs_to_push[@]} ${!pkgs_should_push[@]}); do
-			pkgentry=($(arch_history_fetch $repo $pkg $pkgarch))
+		for pkg in $(uniq_array ${pkgs_to_push[@]} ${pkgs_to_push[@]} ${!pkgs_should_push[@]}); do
+			pkgver=($(pkgver_from_db $repo $pkgarch $pkg))
 			# check if already released first
-			if [ ${#pkgentry[@]} -ne 2 ] || [ ${pkgentry[1]} -ne ${pkgs_should_push[$pkg]} ]; then
+			if [ -z "$pkgver" ] || [ $pkgver -ne ${pkgs_should_push[$pkg]} ]; then
 				warning "Missing split package $pkg-$pkgarch. Did you forget to commitpkg?"
 			fi
 		done
@@ -140,12 +143,17 @@ for repo in ${repos[@]}; do
 done
 
 if [ ${#pkgs_to_remove[@]} -gt 0 ]; then
-	msg "Cleaning from db removed split packages:"
-	for rem in ${!pkgs_to_remove[@]}; do
-		pkg=${rem%-*}
-		arch=${rem##*-}
-		msg2 "$arch\t$pkg"
-		arch_db_remove $repo $arch $pkg
+	pkgs_to_remove=($(dedup_array ${pkgs_to_remove[@]}))
+	for rem in ${pkgs_to_remove[@]}; do
+		repo=${rem%%/*}
+		rem=${rem#*/}
+		pkg=${rem%/*}
+		arch=${rem#*/}
+		msg2 "$repo\t$arch\t$pkg\t[removal]"
+		[ "$arch" == "any" ] && arch=(${ARCHES[@]})
+		for a in ${arch[@]}; do
+			arch_db_remove $repo $a $pkg
+		done
 	done
 fi
 
