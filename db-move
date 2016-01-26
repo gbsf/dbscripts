@@ -13,8 +13,8 @@ repo_from="${args[0]}"
 repo_to="${args[1]}"
 arch="${args[2]}"
 pkgnames=("${args[@]:3}")
-ftppath_from="${FTP_BASE}/${repo_from}/os/"
-ftppath_to="${FTP_BASE}/${repo_to}/os/"
+ftppath_from="${FTP_BASE}/${repo_from}/os"
+ftppath_to="${FTP_BASE}/${repo_to}/os"
 
 if ! check_repo_permission $repo_to || ! check_repo_permission $repo_from; then
 	die "You don't have permission to move packages from ${repo_from} to ${repo_to}"
@@ -37,12 +37,61 @@ done
 
 msg "Moving packages from [${repo_from}] to [${repo_to}]..."
 
+declare -a pkgs_to_remove
 for arch in ${arches[@]}; do
 	for pkgname in "${pkgnames[@]}"; do
 		msg2 "$arch\t$pkgname"
+
+		pkgver_from=$(pkgver_from_db "${repo_from}" "${arch}" "${pkgname}")
+		pkgver_to=$(pkgver_from_db "${repo_to}" "${arch}" "${pkgname}")
+
+		pkg=$(echo "$ftppath_from/${arch}/$pkgname-$pkgver_from"*${PKGEXT})
+
+		if [ ! -f "${pkg}" ]; then
+			die "Package ${pkgname} not found in repo"
+		fi
+
+		pkgbase=$(getpkgbase "${pkg}")
+		pkgarch=$(getpkgarch "${pkg}")
+
 		arch_db_move "${repo_from}" "${repo_to}" "${arch}" "${pkgname}"
+
+		# package isn't in target repo yet
+		if [ -z "${pkgver_to}" ]; then
+			continue
+		fi
+
+		get_pkgbuild ${repo_from} ${pkgbase} ${pkgver_from} || die "PKGBUILD not found for ${pkgbase}-${pkgver_from}"
+		get_pkgbuild ${repo_to} ${pkgbase} ${pkgver_to} || die "PKGBUILD not found for ${pkgbase}-${pkgver_to}"
+
+		pkgnames_from=($(. "${WORKDIR}/pkgbuilds/${repo_from}/${pkgbase}-${pkgver_from}"; echo ${pkgname[@]}))
+		pkgnames_to=($(. "${WORKDIR}/pkgbuilds/${repo_to}/${pkgbase}-${pkgver_to}"; echo ${pkgname[@]}))
+
+		# list pkgnames_from twice to make them non-unique
+		for pkg in $(uniq_array ${pkgnames_from[@]} ${pkgnames_from[@]} ${pkgnames_to[@]}); do
+			pkgarches=($(. "${WORKDIR}/pkgbuilds/${repo_to}/${pkgbase}-${pkgver_to}"; get_arch ${pkg}))
+			if [[ ${pkgarches[0]} == "any" ]]; then
+				msg2 "any\t${pkg}\t[removal]"
+				for _arch in ${ARCHES[@]}; do
+					pkgs_to_remove+=(${pkg}/${_arch})
+				done
+			else
+				msg2 "${arch}\t${pkg}\t[removal]"
+				pkgs_to_remove+=(${pkg}/${arch})
+			fi
+		done
 	done
 done
+
+if [[ ${#pkgs_to_remove[@]} > 0 ]]; then
+	pkgs_to_remove=($(dedup_array ${pkgs_to_remove[@]}))
+
+	for pkgname in ${pkgs_to_remove[@]}; do
+		pkgarch=${pkgname#*/}
+		pkgname=${pkgname%/*}
+		arch_db_remove "${repo_to}" "${pkgarch}" "${pkgname}"
+	done
+fi
 
 arch_history_commit "db-move: $repo_from -> $repo_to: ${pkgnames[*]}"
 
