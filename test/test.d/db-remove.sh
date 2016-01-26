@@ -88,6 +88,26 @@ testRemoveAnyPackages() {
 	done
 }
 
+testRemoveSplitArchPackages() {
+	local arches=('i686' 'x86_64')
+	local pkgbase='pkg-split-c'
+	local arch
+
+	for arch in ${arches[@]}; do
+		releasePackage extra ${pkgbase} ${arch} ${pkgbase}1
+	done
+	releasePackage extra ${pkgbase} any ${pkgbase}2
+
+	"${curdir}"/../../db-update
+
+	"${curdir}"/../../db-remove extra all ${pkgbase}1
+
+	for arch in ${arches[@]}; do
+		checkRemovedPackage extra ${pkgbase}1 ${arch}
+	done
+	checkRemovedAnyPackage extra ${pkgbase}2
+}
+
 testRemoveSingleArch() {
 	local pkgs=('pkg-any-a' 'pkg-any-b')
 	local pkgbase

@@ -179,6 +179,35 @@ testUpdateRemoveSplitPackage() {
 	done
 }
 
+testUpdateRemoveAnySplitPackage() {
+	local arches=('i686' 'x86_64')
+	local pkgbase='pkg-split-c'
+	local arch
+
+	for arch in ${arches[@]}; do
+		releasePackage extra ${pkgbase} ${arch} ${pkgbase}1
+	done
+	releasePackage extra ${pkgbase} any ${pkgbase}2
+
+	"${curdir}"/../../db-update
+
+	pushd "${TMP}/svn-packages-copy/pkg-split-c/trunk/" >/dev/null
+	sed "s/pkgrel=1/pkgrel=2/g;s/pkgname=('pkg-split-c1' 'pkg-split-c2')/pkgname='pkg-split-c1'/g" -i PKGBUILD
+	arch_svn commit -q -m"remove pkg-split-c2; pkgrel=2" >/dev/null
+	popd >/dev/null
+
+	for arch in ${arches[@]}; do
+		releasePackage extra ${pkgbase} ${arch} ${pkgbase}1
+	done
+
+	"${curdir}"/../../db-update
+
+	for arch in ${arches[@]}; do
+		checkPackage extra ${pkgbase}1-1-2-${arch}.pkg.tar.xz ${arch}
+	done
+	checkRemovedAnyPackage extra ${pkgbase}2-1-1-any.pkg.tar.xz
+}
+
 testUnknownRepo() {
 	mkdir "${STAGING}/unknown/"
 	releasePackage extra 'pkg-simple-a' 'i686'

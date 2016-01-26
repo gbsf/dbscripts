@@ -166,6 +166,7 @@ releasePackage() {
 	local repo=$1
 	local pkgbase=$2
 	local arch=$3
+	local singlepkg=$4
 	local a
 	local p
 	local pkgver
@@ -178,6 +179,15 @@ releasePackage() {
 	pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
 
 	popd >/dev/null
+
+	if [ -n "${singlepkg}" ]; then
+		if in_array ${singlepkg} ${pkgname[@]}; then
+			pkgname=(${singlepkg})
+		else
+			error "Package ${singlepkg} is not part of ${pkgbase}"
+			return 1
+		fi
+	fi
 
 	declare -a to_copy
 	for name in ${pkgname[@]}; do
