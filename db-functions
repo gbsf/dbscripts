@@ -156,14 +156,11 @@ get_full_version() {
 # return : return arch from buildfile, including package override if defined
 ##
 get_arch() {
-	# set defaults if they weren't specified in buildfile
-	pkgbase=${pkgbase:-${pkgname[0]}}
 	if [[ -z $1 ]]; then
 		echo ${arch[@]}
 	else
-		local indirect="${i}_override"
 		eval $(declare -f package_$1 | sed -n "s/\(^[[:space:]]*arch=\)/arch_override=/p")
-		[[ -z ${!indirect} ]] && eval ${indirect}=\"${arch[@]}\"
+		[[ -z ${arch_override} ]] && eval arch_override=\"${arch[@]}\"
 
 		echo ${arch_override[@]}
 	fi

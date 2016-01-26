@@ -33,28 +33,34 @@ oneTimeSetUp() {
 	local pkgarch
 	local pkgversion
 	local build
+	local arches=()
 	pkgdir="$(mktemp -d /tmp/${0##*/}.XXXXXXXXXX)"
 	cp -Lr ${lib_dir}/../packages/* "${pkgdir}"
 	msg 'Building packages...'
 	for d in "${pkgdir}"/*; do
 		pushd $d >/dev/null
 		pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
-		pkgarch=($(. PKGBUILD; echo ${arch[@]}))
-		pkgversion=$(. PKGBUILD; echo $(get_full_version ${pkgname}))
 
 		build=true
-		for a in ${pkgarch[@]}; do
-			for p in ${pkgname[@]}; do
+		for p in ${pkgname[@]}; do
+			pkgarch=($(. PKGBUILD; get_arch ${p}))
+			arches+=(${pkgarch[@]})
+			pkgversion=$(. PKGBUILD; get_full_version ${p})
+			for a in ${pkgarch[@]}; do
 				[ ! -f ${p}-${pkgversion}-${a}${PKGEXT} ] && build=false
 			done
 		done
 
 		if ! ${build}; then
-			if [ "${pkgarch[0]}" == 'any' ]; then
+			# check if all packages have any arch
+			pkgarch=($(dedup_array ${arches[@]} any))
+			if [[ ${#pkgarch[@]} == 1 ]]; then
 				sudo extra-x86_64-build || die 'extra-x86_64-build failed'
 				sed 's/pkgrel=1/pkgrel=2/g' -i PKGBUILD
 				sudo extra-x86_64-build || die 'extra-x86_64-build failed'
 			else
+				# remove any
+				pkgarch=($(uniq_array ${pkgarch[@]} any))
 				for a in ${pkgarch[@]}; do
 					sudo extra-${a}-build || die "extra-${a}-build failed"
 				done
