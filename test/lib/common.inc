@@ -22,7 +22,7 @@ signpkg() {
 	if [[ -n $GPGKEY ]]; then
 		SIGNWITHKEY="-u ${GPGKEY}"
 	fi
-	gpg --batch -q --detach-sign --use-agent ${SIGNWITHKEY} ${@} || die
+	gpg --batch -q --detach-sign --use-agent --no-armor ${SIGNWITHKEY} ${@} || die
 }
 
 oneTimeSetUp() {
