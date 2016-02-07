@@ -16,7 +16,7 @@ fi
 
 repos=()
 for staging_repo in ${staging_repos[@]##*/}; do
-	if in_array ${staging_repo} ${PKGREPOS[@]}; then
+	if in_array ${staging_repo} ${PKGREPOS[@]} ${PKGREPOS[@]/%/-${DEBUGSUFFIX}}; then
 		repos+=(${staging_repo})
 	fi
 done
@@ -153,6 +153,10 @@ if [ ${#pkgs_to_remove[@]} -gt 0 ]; then
 		[ "$arch" == "any" ] && arch=(${ARCHES[@]})
 		for a in ${arch[@]}; do
 			arch_db_remove $repo $a $pkg
+
+			if [ -f "$FTP_BASE/$repo-$DEBUGSUFFIX/os/$a/$pkg-$DEBUGSUFFIX"*$PKGEXT ]; then
+				arch_db_remove $repo-$DEBUGSUFFIX $a $pkg-$DEBUGSUFFIX
+			fi
 		done
 	done
 fi

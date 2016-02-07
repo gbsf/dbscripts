@@ -15,6 +15,8 @@ arch="${args[2]}"
 pkgnames=("${args[@]:3}")
 ftppath_from="${FTP_BASE}/${repo_from}/os"
 ftppath_to="${FTP_BASE}/${repo_to}/os"
+ftpdebug_from="${FTP_BASE}/${repo_from}-${DEBUGSUFFIX}/os"
+ftpdebug_to="${FTP_BASE}/${repo_to}-${DEBUGSUFFIX}/os"
 
 if ! check_repo_permission $repo_to || ! check_repo_permission $repo_from; then
 	die "You don't have permission to move packages from ${repo_from} to ${repo_to}"
@@ -33,6 +35,8 @@ fi
 for pkgarch in ${arches[@]}; do
 	repo_lock ${repo_to} ${pkgarch} || exit 1
 	repo_lock ${repo_from} ${pkgarch} || exit 1
+	repo_lock ${repo_to}-${DEBUGSUFFIX} ${pkgarch} || exit 1
+	repo_lock ${repo_from}-${DEBUGSUFFIX} ${pkgarch} || exit 1
 done
 
 msg "Moving packages from [${repo_from}] to [${repo_to}]..."
@@ -45,7 +49,7 @@ for arch in ${arches[@]}; do
 		pkgver_from=$(pkgver_from_db "${repo_from}" "${arch}" "${pkgname}")
 		pkgver_to=$(pkgver_from_db "${repo_to}" "${arch}" "${pkgname}")
 
-		pkg=$(echo "$ftppath_from/${arch}/$pkgname-$pkgver_from"*${PKGEXT})
+		pkg=$(echo "${ftppath_from}/${arch}/${pkgname}-${pkgver_from}"*${PKGEXT})
 
 		if [ ! -f "${pkg}" ]; then
 			die "Package ${pkgname} not found in repo"
@@ -55,6 +59,11 @@ for arch in ${arches[@]}; do
 		pkgarch=$(getpkgarch "${pkg}")
 
 		arch_db_move "${repo_from}" "${repo_to}" "${arch}" "${pkgname}"
+
+		if [ -f "${ftpdebug_from}/${arch}/${pkgname}-${DEBUGSUFFIX}-${pkgver_from}"*${PKGEXT} ]; then
+			arch_db_move "${repo_from}-${DEBUGSUFFIX}" "${repo_to}-${DEBUGSUFFIX}" \
+				"${arch}" "${pkgname}-${DEBUGSUFFIX}"
+		fi
 
 		# package isn't in target repo yet
 		if [ -z "${pkgver_to}" ]; then
@@ -98,4 +107,6 @@ arch_history_commit "db-move: $repo_from -> $repo_to: ${pkgnames[*]}"
 for pkgarch in ${arches[@]}; do
 	repo_unlock ${repo_from} ${pkgarch}
 	repo_unlock ${repo_to} ${pkgarch}
+	repo_unlock ${repo_from}-${DEBUGSUFFIX} ${pkgarch}
+	repo_unlock ${repo_to}-${DEBUGSUFFIX} ${pkgarch}
 done

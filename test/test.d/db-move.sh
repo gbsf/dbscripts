@@ -184,4 +184,26 @@ testMoveChangedAnySplitPackages() {
 	checkRemovedAnyPackage extra ${pkgbase}2-1-1-${arch}.pkg.tar.xz
 }
 
+testMoveDebugPackages() {
+	local arches=('i686' 'x86_64')
+	local pkgbase='pkg-debug-a'
+	local pkgbase
+	local arch
+
+	for arch in ${arches[@]}; do
+		releasePackage testing ${pkgbase} ${arch}
+	done
+
+	"${curdir}"/../../db-update
+
+	"${curdir}"/../../db-move testing extra all ${pkgbase}
+
+	for arch in ${arches[@]}; do
+		checkPackage extra ${pkgbase}-1-1-${arch}.pkg.tar.xz ${arch}
+		checkPackage extra-${DEBUGSUFFIX} ${pkgbase}-${DEBUGSUFFIX}-1-1-${arch}.pkg.tar.xz ${arch}
+		checkRemovedPackage testing ${pkgbase} ${arch}
+		checkRemovedPackage testing-${DEBUGSUFFIX} ${pkgbase}-${DEBUGSUFFIX} ${arch}
+	done
+}
+
 . "${curdir}/../lib/shunit2"

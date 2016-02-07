@@ -39,6 +39,7 @@ oneTimeSetUp() {
 	msg 'Building packages...'
 	for d in "${pkgdir}"/*; do
 		pushd $d >/dev/null
+		pkgname=() # reset variable to not upset subshell
 		pkgname=($(. PKGBUILD; echo ${pkgname[@]}))
 
 		build=true
@@ -105,7 +106,7 @@ setUp() {
 	PKGPOOL='pool/packages'
 	mkdir -p "${TMP}/"{ftp,tmp,staging,{package,source}-cleanup,svn-packages-{copy,repo}}
 
-	for r in ${PKGREPOS[@]}; do
+	for r in "${PKGREPOS[@]}" "${PKGREPOS[@]/%/-${DEBUGSUFFIX}}"; do
 		mkdir -p "${TMP}/staging/${r}"
 		for a in ${ARCHES[@]}; do
 			mkdir -p "${TMP}/ftp/${r}/os/${a}"
@@ -172,6 +173,7 @@ releasePackage() {
 	local pkgver
 	local pkgname
 	local arches
+	local -a to_copy
 
 	archreleasePackage "${pkgbase}"
 	pushd "${TMP}/svn-packages-copy"/${pkgbase}/trunk/ >/dev/null
@@ -189,12 +191,25 @@ releasePackage() {
 		fi
 	fi
 
-	declare -a to_copy
+	to_copy=()
 	for name in ${pkgname[@]}; do
-		to_copy+=("${pkgdir}"/${pkgbase}/${name}-${pkgver}-${arch}${PKGEXT}{,.sig})
+		to_copy+=("${pkgdir}"/${pkgbase}/${name}-${pkgver}-${arch}${PKGEXT})
+		[ -f "${pkgdir}"/${pkgbase}/${name}-${pkgver}-${arch}${PKGEXT}.sig ] &&
+			to_copy+=("${pkgdir}"/${pkgbase}/${name}-${pkgver}-${arch}${PKGEXT}.sig)
 	done
 
 	cp "${to_copy[@]}" "${STAGING}"/${repo}/
+
+	to_copy=()
+	for name in ${pkgname[@]}; do
+		if [ -f "${pkgdir}"/${pkgbase}/${name}-${DEBUGSUFFIX}-${pkgver}-${arch}${PKGEXT} ]; then
+			to_copy+=("${pkgdir}"/${pkgbase}/${name}-${DEBUGSUFFIX}-${pkgver}-${arch}${PKGEXT})
+			[ -f "${pkgdir}"/${pkgbase}/${name}-${DEBUGSUFFIX}-${pkgver}-${arch}${PKGEXT}.sig ] &&
+				to_copy+=("${pkgdir}"/${pkgbase}/${name}-${DEBUGSUFFIX}-${pkgver}-${arch}${PKGEXT}.sig)
+		fi
+	done
+
+	[[ ${#to_copy[@]} > 0 ]] && cp "${to_copy[@]}" "${STAGING}"/${repo}-${DEBUGSUFFIX}/
 
 	if [[ $arch == "any" ]]; then
 		arches=("${ARCHES[@]}")
@@ -203,13 +218,19 @@ releasePackage() {
 	fi
 
 	for _arch in "${arches[@]}"; do
-		# TODO: need to create the symlinks here (what commitpkg does)
-		# should this actually use commitpkg?
 		for single_name in "${pkgname[@]}"; do
 			pkgfile=("${STAGING}/${repo}/"${single_name}-${pkgver}-${arch}${PKGEXT})
 			pkgfile=${pkgfile[0]##*/}
 			mkdir -p "${STAGING}/${repo}/${_arch}"
 			ln -sr "${STAGING}/${repo}/${pkgfile}" "${STAGING}/${repo}/${_arch}/${pkgfile}"
+
+			debugfile=("${STAGING}/${repo}-${DEBUGSUFFIX}/"${single_name}-${DEBUGSUFFIX}-${pkgver}-${arch}${PKGEXT})
+			if [ -f "${debugfile[0]}" ]; then
+				debugfile=${debugfile[0]##*/}
+				mkdir -p "${STAGING}/${repo}-${DEBUGSUFFIX}/${_arch}"
+				ln -sr "${STAGING}/${repo}-${DEBUGSUFFIX}/${debugfile}" \
+					"${STAGING}/${repo}-${DEBUGSUFFIX}/${_arch}/${debugfile}"
+			fi
 		done
 	done
 }

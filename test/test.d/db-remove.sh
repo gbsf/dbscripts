@@ -126,4 +126,23 @@ testRemoveSingleArch() {
 	checkPackage extra pkg-any-b-1-1-any.pkg.tar.xz x86_64
 }
 
+testRemoveDebugPackage() {
+	local arches=('i686' 'x86_64')
+	local pkgbase='pkg-debug-a'
+	local arch
+
+	for arch in ${arches[@]}; do
+		releasePackage extra ${pkgbase} ${arch} ${pkgbase}
+	done
+
+	"${curdir}"/../../db-update
+
+	"${curdir}"/../../db-remove extra all ${pkgbase}
+
+	for arch in ${arches[@]}; do
+		checkRemovedPackage extra ${pkgbase} ${arch}
+		checkRemovedPackage extra-${DEBUGSUFFIX} ${pkgbase}-${DEBUGSUFFIX} ${arch}
+	done
+}
+
 . "${curdir}/../lib/shunit2"
