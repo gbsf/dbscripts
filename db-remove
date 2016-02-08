@@ -27,7 +27,9 @@ fi
 
 for tarch in ${tarches[@]}; do
 	repo_lock $repo $tarch || exit 1
-	repo_lock $repo-$DEBUGSUFFIX $tarch || exit 1
+	if [[ ! $repo =~ .*-${DEBUGSUFFIX}$ ]]; then
+		repo_lock $repo-$DEBUGSUFFIX $tarch || exit 1
+	fi
 done
 
 remove_pkgs=()
@@ -47,6 +49,10 @@ for pkgname in ${pkgnames[@]}; do
 		continue
 	fi
 
+	remove_pkgs+=($pkgname)
+
+	[[ $pkgname =~ .*-${DEBUGSUFFIX}$ ]] && continue # skip if removing a debug package
+
 	get_pkgbuild $repo $pkgbase $pkgver
 	pkgs=($(. "$WORKDIR/pkgbuilds/$repo/$pkgbase-$pkgver"; echo "${pkgname[@]}"))
 
@@ -58,7 +64,7 @@ for pkgname in ${pkgnames[@]}; do
 		done
 	fi
 
-	remove_pkgs+=(${pkgs[@]})
+	remove_pkgs+=(${extrapkgs[@]})
 
 	for pkg in "${pkgs[@]}"; do
 		if [ -f "$ftppath_debug/${tarches[0]}/$pkg-$DEBUGSUFFIX"*$PKGEXT ]; then
@@ -86,6 +92,9 @@ fi
 
 for tarch in ${tarches[@]}; do
 	repo_unlock $repo $tarch
-	repo_unlock $repo-$DEBUGSUFFIX $tarch
+	if [[ ! $repo =~ .*-${DEBUGSUFFIX}$ ]]; then
+		repo_unlock $repo-$DEBUGSUFFIX $tarch
+	fi
+
 done
 
