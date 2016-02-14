@@ -98,11 +98,11 @@ if [[ -z $server ]]; then
 	server='nymeria.archlinux.org'
 fi
 
-if [[ -n $(svn status -q) ]]; then
+if [[ -n $(svn status -q $DIR) ]]; then
 	msgtemplate="upgpkg: $pkgbase $(get_full_version)"$'\n\n'
 	if [[ -n $1 ]]; then
 		stat_busy 'Committing changes to trunk'
-		svn commit -q -m "${msgtemplate}${1}" || die
+		svn commit -q -m "${msgtemplate}${1}" $DIR || die "Commit failed"
 		stat_done
 	else
 		msgfile="$(mktemp)"
@@ -116,9 +116,9 @@ if [[ -n $(svn status -q) ]]; then
 		else
 			vi "$msgfile"
 		fi
-		[[ -s $msgfile ]] || die
+		[[ -s $msgfile ]] || die "Commit message empty"
 		stat_busy 'Committing changes to trunk'
-		svn commit -q -F "$msgfile" || die
+		svn commit -q -F "$msgfile" $DIR || die "Commit failed"
 		unlink "$msgfile"
 		stat_done
 	fi
