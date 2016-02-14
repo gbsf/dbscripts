@@ -29,7 +29,7 @@ pkgbase=${pkgbase:-$pkgname}
 case "$cmd" in
 	commitpkg)
 		if (( $# == 0 )); then
-			die 'Usage: commitpkg <reponame> [-f] [-s server] [-l limit] [-a arch] [commit message]'
+			die 'Usage: commitpkg <reponame> [-s server] [-l limit] [-a arch] [commit message]'
 		fi
 		repo="$1"
 		shift
@@ -38,7 +38,7 @@ case "$cmd" in
 		repo="${cmd%pkg}"
 		;;
 	*)
-		die 'Usage: commitpkg <reponame> [-f] [-s server] [-l limit] [-a arch] [commit message]'
+		die 'Usage: commitpkg <reponame> [-s server] [-l limit] [-a arch] [commit message]'
 		;;
 esac
 
@@ -65,10 +65,8 @@ if (( ${#needsversioning[*]} )); then
 fi
 
 rsyncopts=(-e ssh -p --chmod=ug=rw,o=r -c -h -L --progress --partial -y)
-archreleaseopts=()
-while getopts 'l:a:s:f' flag; do
+while getopts 'l:a:s:' flag; do
 	case $flag in
-		f) archreleaseopts+=('-f') ;;
 		s) server=$OPTARG ;;
 		l) rsyncopts+=("--bwlimit=$OPTARG") ;;
 		a) commit_arch=$OPTARG ;;
