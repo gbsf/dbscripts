@@ -125,6 +125,7 @@ if [[ -n $(svn status -q) ]]; then
 fi
 
 declare -a uploads
+declare -a uploads_debug
 declare -a commit_arches
 declare -a skip_arches
 
@@ -156,6 +157,25 @@ for _arch in ${arch[@]}; do
 			die "Signature %s.sig is incorrect!" "$pkgfile"
 		fi
 		uploads+=("$sigfile")
+
+		if ! pkgfile_debug=$(find_cached_package "$_pkgname-$DEBUGSUFFIX" "$fullver" "${_arch}" "$DIR"); then
+			continue
+		fi
+		uploads_debug+=("$pkgfile_debug")
+
+		sigfile_debug="${pkgfile_debug}.sig"
+		if [[ ! -f $sigfile_debug ]]; then
+			msg "Signing package ${pkgfile_debug}..."
+			if [[ -n $GPGKEY ]]; then
+				SIGNWITHKEY="-u ${GPGKEY}"
+			fi
+			gpg --detach-sign --use-agent ${SIGNWITHKEY} "${pkgfile_debug}" || die
+		fi
+		if ! gpg --verify "$sigfile_debug" >/dev/null 2>&1; then
+			die "Signature %s.sig is incorrect!" "$pkgfile_debug"
+		fi
+		uploads_debug+=("$sigfile_debug")
+
 	done
 done
 
@@ -196,3 +216,28 @@ if [[ ${#uploads[*]} -gt 0 ]]; then
 	done
 fi
 
+if [[ ${#uploads_debug[*]} -gt 0 ]]; then
+	new_uploads=()
+
+	# convert to absolute paths so rsync can work with colons (epoch)
+	while read -r -d '' upload; do
+		new_uploads+=("$upload")
+	done < <(realpath -z "${uploads_debug[@]}")
+
+	uploads_debug=("${new_uploads[@]}")
+	unset new_uploads
+	msg 'Uploading all debug package and signature files'
+	rsync "${rsyncopts[@]}" "${uploads_debug[@]}" "$server:staging/$repo-$DEBUGSUFFIX/" || die
+
+	for _upload in "${uploads_debug[@]}"; do
+		pkgfile=${_upload##*/}
+
+		if [[ $pkgfile = *.pkg.tar?(.?z) ]]; then
+			_arches=($(getpkgarch "$_upload"))
+			[[ ${_arches[0]} = any ]] && _arches=(${commit_arches[@]})
+			for _arch in "${_arches[@]}"; do
+				ssh "$server" ln -sr "staging/$repo-$DEBUGSUFFIX/$pkgfile" "staging/$repo-$DEBUGSUFFIX/$_arch/$pkgfile"
+			done
+		fi
+	done
+fi
