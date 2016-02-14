@@ -145,6 +145,33 @@ declare -a uploads_debug
 declare -a commit_arches
 declare -a skip_arches
 
+print_pkg() {
+	local pkgname=$1 fullver=$2 pkgarch=$3 search_dir=$4
+	local pkgfile sigfile
+	pkgfile=$(find_cached_package "$pkgname" "$fullver" "$pkgarch" "$search_dir") || return 1
+
+	# skip packages not in list
+	if [[ ${#commitpkgs[@]} -gt 0 ]] && \
+		! in_array ${pkgfile##*/} "${commitpkgs[@]}" && \
+		! in_array $pkgname "${commitpkgs[@]}"; then
+		return 0
+	fi
+
+	sigfile="${pkgfile}.sig"
+	if [[ ! -f $sigfile ]]; then
+		local SIGNWITHKEY
+		if [[ -n $GPGKEY ]]; then
+			SIGNWITHKEY="-u ${GPGKEY}"
+		fi
+		gpg --detach-sign --use-agent --no-armor ${SIGNWITHKEY} "${pkgfile}" || die
+	fi
+	if ! gpg --verify "$sigfile" >/dev/null 2>&1; then
+		die "Signature %s.sig is incorrect!" "$pkgfile"
+	fi
+
+	echo "$pkgfile" "$sigfile"
+}
+
 for _arch in ${arch[@]}; do
 	if [[ -n $commit_arch && ${_arch} != "$commit_arch" ]]; then
 		skip_arches+=($_arch)
@@ -159,52 +186,14 @@ for _arch in ${arch[@]}; do
 			pkgarch=$_arch
 		fi
 
-		if ! pkgfile=$(find_cached_package "$_pkgname" "$fullver" "$pkgarch" "$DIR"); then
+		ret=()
+		if ! ret=($(print_pkg $_pkgname $fullver $pkgarch $DIR)); then
 			warning "Skipping $_pkgname-$fullver-$_arch: failed to locate package file"
 			skip_arches+=($_arch)
 			continue 2
 		fi
-
-		# skip packages not in list
-		if [[ ${#commitpkgs[@]} -gt 0 ]] && \
-			! in_array ${pkgfile##*/} "${commitpkgs[@]}" && \
-			! in_array $_pkgname "${commitpkgs[@]}"; then
-			continue
-		fi
-
-		uploads+=("$pkgfile")
-
-		sigfile="${pkgfile}.sig"
-		if [[ ! -f $sigfile ]]; then
-			msg "Signing package ${pkgfile}..."
-			if [[ -n $GPGKEY ]]; then
-				SIGNWITHKEY="-u ${GPGKEY}"
-			fi
-			gpg --detach-sign --use-agent --no-armor ${SIGNWITHKEY} "${pkgfile}" || die
-		fi
-		if ! gpg --verify "$sigfile" >/dev/null 2>&1; then
-			die "Signature %s.sig is incorrect!" "$pkgfile"
-		fi
-		uploads+=("$sigfile")
-
-		if ! pkgfile_debug=$(find_cached_package "$_pkgname-$DEBUGSUFFIX" "$fullver" "$pkgarch" "$DIR"); then
-			continue
-		fi
-		uploads_debug+=("$pkgfile_debug")
-
-		sigfile_debug="${pkgfile_debug}.sig"
-		if [[ ! -f $sigfile_debug ]]; then
-			msg "Signing package ${pkgfile_debug}..."
-			if [[ -n $GPGKEY ]]; then
-				SIGNWITHKEY="-u ${GPGKEY}"
-			fi
-			gpg --detach-sign --use-agent --no-armor ${SIGNWITHKEY} "${pkgfile_debug}" || die
-		fi
-		if ! gpg --verify "$sigfile_debug" >/dev/null 2>&1; then
-			die "Signature %s.sig is incorrect!" "$pkgfile_debug"
-		fi
-		uploads_debug+=("$sigfile_debug")
-
+		uploads+=(${ret[@]})
+		uploads_debug+=($(print_pkg $_pkgname-$DEBUGSUFFIX $fullver $pkgarch $DIR))
 	done
 done
 
@@ -219,54 +208,38 @@ if [[ ${#commit_arches[*]} -gt 0 ]]; then
 	(cd $DIR; $(dirname $0)/archrelease)
 fi
 
-if [[ ${#uploads[*]} -gt 0 ]]; then
-	new_uploads=()
+upload_files() {
+	local repo=$1
+	local -a files=("${@:2}")
 
-	# convert to absolute paths so rsync can work with colons (epoch)
-	while read -r -d '' upload; do
-		new_uploads+=("$upload")
-	done < <(realpath -z "${uploads[@]}")
 
-	uploads=($(dedup_array "${new_uploads[@]}"))
-	unset new_uploads
+	if [[ ${#files[*]} -gt 0 ]]; then
+		local -a new_files=()
+
+		# convert to absolute paths so rsync can work with colons (epoch)
+		while read -r -d '' file; do
+			new_files+=("$file")
+		done < <(realpath -z "${files[@]}")
+
+		files=($(dedup_array "${new_files[@]}"))
+		rsync "${rsyncopts[@]}" "${files[@]}" "$server:staging/$repo/" || die
+
+		for _file in "${files[@]}"; do
+			pkgfile=${_file##*/}
+
+			if [[ $pkgfile = *.pkg.tar?(.?z) ]]; then
+				_arches=($(getpkgarch "$_file"))
+				[[ ${_arches[0]} = any ]] && _arches=(${commit_arches[@]})
+				for _arch in "${_arches[@]}"; do
+					ssh "$server" ln -sr "staging/$repo/$pkgfile" "staging/$repo/$_arch/$pkgfile"
+				done
+			fi
+		done
+	fi
+}
+
+if [[ ${#uploads[@]} -gt 0 ]]; then
 	msg 'Uploading all package and signature files'
-	rsync "${rsyncopts[@]}" "${uploads[@]}" "$server:staging/$repo/" || die
-
-	for _upload in "${uploads[@]}"; do
-		pkgfile=${_upload##*/}
-
-		if [[ $pkgfile = *.pkg.tar?(.?z) ]]; then
-			_arches=($(getpkgarch "$_upload"))
-			[[ ${_arches[0]} = any ]] && _arches=(${commit_arches[@]})
-			for _arch in "${_arches[@]}"; do
-				ssh "$server" ln -sr "staging/$repo/$pkgfile" "staging/$repo/$_arch/$pkgfile"
-			done
-		fi
-	done
-fi
-
-if [[ ${#uploads_debug[*]} -gt 0 ]]; then
-	new_uploads=()
-
-	# convert to absolute paths so rsync can work with colons (epoch)
-	while read -r -d '' upload; do
-		new_uploads+=("$upload")
-	done < <(realpath -z "${uploads_debug[@]}")
-
-	uploads_debug=($(dedup_array "${new_uploads[@]}"))
-	unset new_uploads
-	msg 'Uploading all debug package and signature files'
-	rsync "${rsyncopts[@]}" "${uploads_debug[@]}" "$server:staging/$repo-$DEBUGSUFFIX/" || die
-
-	for _upload in "${uploads_debug[@]}"; do
-		pkgfile=${_upload##*/}
-
-		if [[ $pkgfile = *.pkg.tar?(.?z) ]]; then
-			_arches=($(getpkgarch "$_upload"))
-			[[ ${_arches[0]} = any ]] && _arches=(${commit_arches[@]})
-			for _arch in "${_arches[@]}"; do
-				ssh "$server" ln -sr "staging/$repo-$DEBUGSUFFIX/$pkgfile" "staging/$repo-$DEBUGSUFFIX/$_arch/$pkgfile"
-			done
-		fi
-	done
+	upload_files $repo "${uploads[@]}"
+	upload_files $repo-$DEBUGSUFFIX "${uploads_debug[@]}"
 fi
