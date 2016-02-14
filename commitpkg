@@ -218,7 +218,7 @@ for _arch in ${arch[@]}; do
 done
 
 if [[ ${#commit_arches[*]} -gt 0 ]]; then
-	(cd $DIR; $(dirname $0)/archrelease) || die
+	(cd $DIR; $(dirname $0)/archrelease)
 fi
 
 if [[ ${#uploads[*]} -gt 0 ]]; then
