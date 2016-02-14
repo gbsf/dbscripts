@@ -187,7 +187,7 @@ pkgver_equal() {
 ##
 find_cached_package() {
 	local targetname=$1 targetver=$2 targetarch=$3
-	local searchdirs=("$PKGDEST" "${@:3}") results=()
+	local searchdirs=("$PKGDEST" "${@:4}") results=()
 	local dir pkg pkgbasename pkgparts name ver rel arch size r results
 
 	for dir in "${searchdirs[@]}"; do

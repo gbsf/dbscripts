@@ -137,12 +137,18 @@ for _arch in ${arch[@]}; do
 
 	for _pkgname in ${pkgname[@]}; do
 		fullver=$(get_full_version $_pkgname)
+		if [[ $(get_arch $_pkgname) = any ]]; then
+			pkgarch=any
+		else
+			pkgarch=$_arch
+		fi
 
-		if ! pkgfile=$(find_cached_package "$_pkgname" "$fullver" "${_arch}" "$DIR"); then
+		if ! pkgfile=$(find_cached_package "$_pkgname" "$fullver" "$pkgarch" "$DIR"); then
 			warning "Skipping $_pkgname-$fullver-$_arch: failed to locate package file"
 			skip_arches+=($_arch)
 			continue 2
 		fi
+
 		uploads+=("$pkgfile")
 
 		sigfile="${pkgfile}.sig"
@@ -158,7 +164,7 @@ for _arch in ${arch[@]}; do
 		fi
 		uploads+=("$sigfile")
 
-		if ! pkgfile_debug=$(find_cached_package "$_pkgname-$DEBUGSUFFIX" "$fullver" "${_arch}" "$DIR"); then
+		if ! pkgfile_debug=$(find_cached_package "$_pkgname-$DEBUGSUFFIX" "$fullver" "$pkgarch" "$DIR"); then
 			continue
 		fi
 		uploads_debug+=("$pkgfile_debug")
@@ -198,7 +204,7 @@ if [[ ${#uploads[*]} -gt 0 ]]; then
 		new_uploads+=("$upload")
 	done < <(realpath -z "${uploads[@]}")
 
-	uploads=("${new_uploads[@]}")
+	uploads=($(dedup_array "${new_uploads[@]}"))
 	unset new_uploads
 	msg 'Uploading all package and signature files'
 	rsync "${rsyncopts[@]}" "${uploads[@]}" "$server:staging/$repo/" || die
@@ -224,7 +230,7 @@ if [[ ${#uploads_debug[*]} -gt 0 ]]; then
 		new_uploads+=("$upload")
 	done < <(realpath -z "${uploads_debug[@]}")
 
-	uploads_debug=("${new_uploads[@]}")
+	uploads_debug=($(dedup_array "${new_uploads[@]}"))
 	unset new_uploads
 	msg 'Uploading all debug package and signature files'
 	rsync "${rsyncopts[@]}" "${uploads_debug[@]}" "$server:staging/$repo-$DEBUGSUFFIX/" || die
