@@ -19,14 +19,11 @@ fi
 
 cmd=${0##*/}
 
-# TODO do this properly
-cd "$DIR"
-
-if [[ ! -f PKGBUILD ]]; then
+if [[ ! -f $DIR/PKGBUILD ]]; then
 	die 'No PKGBUILD file'
 fi
 
-. ./PKGBUILD
+. $DIR/PKGBUILD
 pkgbase=${pkgbase:-$pkgname}
 
 case "$cmd" in
@@ -48,14 +45,14 @@ esac
 # find files which should be under source control
 needsversioning=()
 for s in "${source[@]}"; do
-	[[ $s != *://* ]] && needsversioning+=("$s")
+	[[ $s != *://* ]] && needsversioning+=("$DIR/$s")
 done
 for i in 'changelog' 'install'; do
 	while read -r file; do
 		# evaluate any bash variables used
 		eval file=\"$(sed 's/^\(['\''"]\)\(.*\)\1$/\2/' <<< "$file")\"
 		needsversioning+=("$file")
-	done < <(sed -n "s/^[[:space:]]*$i=//p" PKGBUILD)
+	done < <(sed -n "s/^[[:space:]]*$i=//p" $DIR/PKGBUILD)
 done
 
 # assert that they really are controlled by SVN
@@ -64,7 +61,7 @@ if (( ${#needsversioning[*]} )); then
 	while read -r status filename; do
 		[[ $status = '?' ]] && unversioned+=("$filename")
 	done < <(svn status -v "${needsversioning[@]}")
-	(( ${#unversioned[*]} )) && die "%s is not under version control" "${unversioned[@]}"
+	(( ${#unversioned[*]} )) && die "%s is not under version control" "${unversioned[@]##*/}"
 fi
 
 rsyncopts=(-e ssh -p --chmod=ug=rw,o=r -c -h -L --progress --partial -y)
@@ -89,8 +86,8 @@ for _arch in ${arch[@]}; do
 	for _pkgname in ${pkgname[@]}; do
 		fullver=$(get_full_version $_pkgname)
 
-		if pkgfile=$(find_cached_package "$_pkgname" "$_arch" "$fullver"); then
-			if grep -q "packager = Unknown Packager" <(bsdtar -xOqf "$pkgfile" .PKGINFO); then
+		if pkgfile=$(find_cached_package "$_pkgname" "$_arch" "$fullver" "$DIR"); then
+			if ! check_packager "$pkgfile"; then
 				die "PACKAGER was not set when building package"
 			fi
 		fi
@@ -140,7 +137,7 @@ for _arch in ${arch[@]}; do
 	for _pkgname in ${pkgname[@]}; do
 		fullver=$(get_full_version $_pkgname)
 
-		if ! pkgfile=$(find_cached_package "$_pkgname" "$fullver" "${_arch}"); then
+		if ! pkgfile=$(find_cached_package "$_pkgname" "$fullver" "${_arch}" "$DIR"); then
 			warning "Skipping $_pkgname-$fullver-$_arch: failed to locate package file"
 			skip_arches+=($_arch)
 			continue 2
@@ -162,6 +159,7 @@ for _arch in ${arch[@]}; do
 	done
 done
 
+[[ ${arch[0]} = any ]] && arch=(${ARCHES[@]})
 for _arch in ${arch[@]}; do
 	if ! in_array $_arch ${skip_arches[@]}; then
 		commit_arches+=($_arch)
@@ -169,7 +167,7 @@ for _arch in ${arch[@]}; do
 done
 
 if [[ ${#commit_arches[*]} -gt 0 ]]; then
-	$(dirname $0)/archrelease || die
+	(cd $DIR; $(dirname $0)/archrelease) || die
 fi
 
 if [[ ${#uploads[*]} -gt 0 ]]; then
@@ -186,12 +184,13 @@ if [[ ${#uploads[*]} -gt 0 ]]; then
 	rsync "${rsyncopts[@]}" "${uploads[@]}" "$server:staging/$repo/" || die
 
 	for _upload in "${uploads[@]}"; do
-		local pkgfile=${upload##*/}
+		pkgfile=${_upload##*/}
 
-		# TODO: logic to determine which package to add to which arches
 		if [[ $pkgfile = *.pkg.tar?(.?z) ]]; then
-			for _arch in "${commit_arches[@]}"; do
-				ssh "$server" ln -sr "staging/$repo/$pkgfile" "staging/$repo/$arch/$pkgfile"
+			_arches=($(getpkgarch "$_upload"))
+			[[ ${_arches[0]} = any ]] && _arches=(${commit_arches[@]})
+			for _arch in "${_arches[@]}"; do
+				ssh "$server" ln -sr "staging/$repo/$pkgfile" "staging/$repo/$_arch/$pkgfile"
 			done
 		fi
 	done
