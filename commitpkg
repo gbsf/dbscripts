@@ -66,7 +66,7 @@ fi
 
 rsyncopts=(-e ssh -p --chmod=ug=rw,o=r -c -h -L --progress --partial -y)
 archreleaseopts=()
-while getopts ':l:a:s:f' flag; do
+while getopts 'l:a:s:f' flag; do
 	case $flag in
 		f) archreleaseopts+=('-f') ;;
 		s) server=$OPTARG ;;
@@ -76,7 +76,25 @@ while getopts ':l:a:s:f' flag; do
 		\?) die "Invalid option -- '%s'" "$OPTARG" ;;
 	esac
 done
-shift $(( OPTIND - 1 ))
+if (( OPTIND > 1 )); then
+	shift $(( OPTIND - 2 ))
+else
+	shift $(( OPTIND - 1 ))
+fi
+
+declare -a commitpkgs=()
+
+# ugly workaround to tell a commit message from a package list
+if [[ $1 = '--' ]]; then
+	commitpkgs=(${@:2})
+else
+	(( OPTIND > 1 )) && shift
+	commitmsg=$1
+
+	if [[ $2 = '--' ]]; then
+		commitpkgs=(${@:3})
+	fi
+fi
 
 # check packages have the packager field set
 for _arch in ${arch[@]}; do
@@ -100,9 +118,9 @@ fi
 
 if [[ -n $(svn status -q $DIR) ]]; then
 	msgtemplate="upgpkg: $pkgbase $(get_full_version)"$'\n\n'
-	if [[ -n $1 ]]; then
+	if [[ -n $commitmsg ]]; then
 		stat_busy 'Committing changes to trunk'
-		svn commit -q -m "${msgtemplate}${1}" $DIR || die "Commit failed"
+		svn commit -q -m "${msgtemplate}${commitmsg}" $DIR || die "Commit failed"
 		stat_done
 	else
 		msgfile="$(mktemp)"
@@ -147,6 +165,13 @@ for _arch in ${arch[@]}; do
 			warning "Skipping $_pkgname-$fullver-$_arch: failed to locate package file"
 			skip_arches+=($_arch)
 			continue 2
+		fi
+
+		# skip packages not in list
+		if [[ ${#commitpkgs[@]} -gt 0 ]] && \
+			! in_array ${pkgfile##*/} "${commitpkgs[@]}" && \
+			! in_array $_pkgname "${commitpkgs[@]}"; then
+			continue
 		fi
 
 		uploads+=("$pkgfile")
