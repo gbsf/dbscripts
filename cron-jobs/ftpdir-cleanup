@@ -24,7 +24,9 @@ clean_pkg() {
 
 script_lock
 
-for repo in ${PKGREPOS[@]}; do
+repos=(${PKGREPOS[@]} ${PKGREPOS[@]/%/-${DEBUGSUFFIX}})
+
+for repo in ${repos[@]}; do
 	for arch in ${ARCHES[@]}; do
 		repo_lock ${repo} ${arch} || exit 1
 	done
@@ -32,7 +34,7 @@ done
 
 ${CLEANUP_DRYRUN} && warning 'dry run mode is active'
 
-for repo in ${PKGREPOS[@]}; do
+for repo in ${repos[@]}; do
 	for arch in ${ARCHES[@]}; do
 		if [ ! -f "${FTP_BASE}/${repo}/os/${arch}/${repo}${DBEXT}" ]; then
 			continue
@@ -61,7 +63,7 @@ for repo in ${PKGREPOS[@]}; do
 	done
 done
 
-# get a list of all available packages in the pacakge pool
+# get a list of all available packages in the package pool
 find "$FTP_BASE/${PKGPOOL}" -name "*${PKGEXT}" -printf '%f\n' | sort > "${WORKDIR}/pool"
 # create a list of packages in our db
 find "${WORKDIR}" -maxdepth 1 -type f -name 'db-*' -exec cat {} \; | sort -u > "${WORKDIR}/db"
@@ -87,7 +89,7 @@ if [ ${#old_pkgs[@]} -ge 1 ]; then
 	done
 fi
 
-for repo in ${PKGREPOS[@]}; do
+for repo in ${repos[@]}; do
 	for arch in ${ARCHES[@]}; do
 		repo_unlock ${repo} ${arch}
 	done
