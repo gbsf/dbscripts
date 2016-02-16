@@ -725,14 +725,15 @@ arch_history_add() {
 	local pkgbase=$(getpkgbase "$pkgfile")
 	local pkgver=$(getpkgver "$pkgfile")
 
-	local history_file="$HISTORYREPO/$repo/$tarch/$pkgname"
+	local staging_dir="$WORKDIR/history"
+	local history_file="$staging_dir/$repo/$tarch/$pkgname"
 
 	mkdir -p "${history_file%/*}"
 	echo "$pkgbase $pkgver" > "$history_file"
 
 	debug "History: Adding $pkgname $pkgver [$repo] ($tarch)"
 
-	HISTORY_add_files=("${HISTORY_add_files[@]}" "$history_file")
+	HISTORY_add_files=("${HISTORY_add_files[@]}" "${history_file/$staging_dir/$HISTORYREPO}")
 }
 
 arch_history_remove() {
@@ -750,9 +751,12 @@ arch_history_remove() {
 }
 
 arch_history_commit() {
+	flock -e 9
+
 	pushd "$HISTORYREPO" >/dev/null
 		did_work=0
 		if ((${#HISTORY_add_files[@]} > 0)); then
+			cp -r -- "$WORKDIR/history/"* .
 			git add -- "${HISTORY_add_files[@]}"
 			did_work=1
 		fi
@@ -765,7 +769,7 @@ arch_history_commit() {
 			git commit -q -m "$1"
 		fi
 	popd >/dev/null
-}
+} 9> $HISTORYREPO/.git/dbscripts.gitlock
 
 pkgentry_from_db() {
 	local repo="$1"
