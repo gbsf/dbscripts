@@ -133,7 +133,7 @@ for repo in ${repos[@]}; do
 		for pkg in $(uniq_array ${pkgs_to_push[@]} ${pkgs_to_push[@]} ${!pkgs_should_push[@]}); do
 			pkgver=($(pkgver_from_db $repo $pkgarch $pkg))
 			# check if already released first
-			if [ -z "$pkgver" ] || [ $pkgver -ne ${pkgs_should_push[$pkg]} ]; then
+			if [ -z "$pkgver" ] || [ $pkgver != ${pkgs_should_push[$pkg]} ]; then
 				warning "Missing split package $pkg-$pkgarch. Did you forget to commitpkg?"
 			fi
 		done

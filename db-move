@@ -46,17 +46,19 @@ for arch in ${arches[@]}; do
 	for pkgname in "${pkgnames[@]}"; do
 		msg2 "$arch\t$pkgname"
 
-		pkgver_from=$(pkgver_from_db "${repo_from}" "${arch}" "${pkgname}")
-		pkgver_to=$(pkgver_from_db "${repo_to}" "${arch}" "${pkgname}")
-
-		pkg=$(echo "${ftppath_from}/${arch}/${pkgname}-${pkgver_from}"*${PKGEXT})
-
-		if [ ! -f "${pkg}" ]; then
-			die "Package ${pkgname} not found in repo"
-		fi
-
-		pkgbase=$(getpkgbase "${pkg}")
-		pkgarch=$(getpkgarch "${pkg}")
+		for pkg in $(find_removed_split_packages "${repo_from}" "${repo_to}" "${arch}" "${pkgname}"); do
+			pkgentry=$(pkgentry_from_db "${repo_to}" "${arch}" "${pkg}")
+			pkgarch=$(getpkgarch $(getpkgfile "${ftppath_to}/${arch}/${pkgentry}"*${PKGEXT}))
+			if [[ ${pkgarch} == any ]]; then
+				msg2 "any\t${pkg}\t[removal]"
+				for _arch in ${ARCHES[@]}; do
+					pkgs_to_remove+=(${pkg}/${_arch})
+				done
+			else
+				msg2 "${arch}\t${pkg}\t[removal]"
+				pkgs_to_remove+=(${pkg}/${pkgarch})
+			fi
+		done
 
 		arch_db_move "${repo_from}" "${repo_to}" "${arch}" "${pkgname}"
 
@@ -65,30 +67,6 @@ for arch in ${arches[@]}; do
 				"${arch}" "${pkgname}-${DEBUGSUFFIX}"
 		fi
 
-		# package isn't in target repo yet
-		if [ -z "${pkgver_to}" ]; then
-			continue
-		fi
-
-		get_pkgbuild ${repo_from} ${pkgbase} ${pkgver_from} || die "PKGBUILD not found for ${pkgbase}-${pkgver_from}"
-		get_pkgbuild ${repo_to} ${pkgbase} ${pkgver_to} || die "PKGBUILD not found for ${pkgbase}-${pkgver_to}"
-
-		pkgnames_from=($(. "${WORKDIR}/pkgbuilds/${repo_from}/${pkgbase}-${pkgver_from}"; echo ${pkgname[@]}))
-		pkgnames_to=($(. "${WORKDIR}/pkgbuilds/${repo_to}/${pkgbase}-${pkgver_to}"; echo ${pkgname[@]}))
-
-		# list pkgnames_from twice to make them non-unique
-		for pkg in $(uniq_array ${pkgnames_from[@]} ${pkgnames_from[@]} ${pkgnames_to[@]}); do
-			pkgarches=($(. "${WORKDIR}/pkgbuilds/${repo_to}/${pkgbase}-${pkgver_to}"; get_arch ${pkg}))
-			if [[ ${pkgarches[0]} == "any" ]]; then
-				msg2 "any\t${pkg}\t[removal]"
-				for _arch in ${ARCHES[@]}; do
-					pkgs_to_remove+=(${pkg}/${_arch})
-				done
-			else
-				msg2 "${arch}\t${pkg}\t[removal]"
-				pkgs_to_remove+=(${pkg}/${arch})
-			fi
-		done
 	done
 done
 
@@ -98,7 +76,14 @@ if [[ ${#pkgs_to_remove[@]} > 0 ]]; then
 	for pkgname in ${pkgs_to_remove[@]}; do
 		pkgarch=${pkgname#*/}
 		pkgname=${pkgname%/*}
+
 		arch_db_remove "${repo_to}" "${pkgarch}" "${pkgname}"
+
+		# handle egde-case of multiple versions around
+		pkgs=($(echo "${ftpdebug_to}/${arch}/${pkgname}-${DEBUGSUFFIX}"*${PKGEXT}))
+		if [ -f "${pkgs[0]}" ]; then
+			arch_db_remove "${repo_to}-${DEBUGSUFFIX}" "${pkgarch}" "${pkgname}-${DEBUGSUFFIX}"
+		fi
 	done
 fi
 

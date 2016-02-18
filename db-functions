@@ -697,7 +697,6 @@ arch_db_move() {
 	local arch=$3
 	local pkgnames=(${@:4})
 
-
 	local ftppath_from="${FTP_BASE}/${repo_from}/os"
 
 	for pkgname in "${pkgnames[@]}"; do
@@ -715,6 +714,33 @@ arch_db_move() {
 			arch_db_remove "${repo_from}" "$arch" "$pkgname"
 		done
 	done
+}
+
+find_removed_split_packages() {
+	local repo_from=$1
+	local repo_to=$2
+	local arch=$3
+	local pkgname=$4
+
+	local ftppath_from="${FTP_BASE}/${repo_from}/os"
+
+	pkgver_from=$(pkgver_from_db "${repo_from}" "${arch}" "${pkgname}")
+	pkgver_to=$(pkgver_from_db "${repo_to}" "${arch}" "${pkgname}")
+
+	# package isn't in target repo
+	[[ -z ${pkgver_to} ]] && return
+
+	pkg=$(getpkgfile "${ftppath_from}/${arch}/${pkgname}-${pkgver_from}"*${PKGEXT})
+	pkgbase=$(getpkgbase "${pkg}")
+
+	get_pkgbuild ${repo_from} ${pkgbase} ${pkgver_from} || die "PKGBUILD not found for ${pkgbase}-${pkgver_from}"
+	get_pkgbuild ${repo_to} ${pkgbase} ${pkgver_to} || die "PKGBUILD not found for ${pkgbase}-${pkgver_to}"
+
+	pkgnames_from=($(. "${WORKDIR}/pkgbuilds/${repo_from}/${pkgbase}-${pkgver_from}"; echo ${pkgname[@]}))
+	pkgnames_to=($(. "${WORKDIR}/pkgbuilds/${repo_to}/${pkgbase}-${pkgver_to}"; echo ${pkgname[@]}))
+
+	# list pkgnames_from twice to make them non-unique
+	uniq_array ${pkgnames_from[@]} ${pkgnames_from[@]} ${pkgnames_to[@]}
 }
 
 arch_history_add() {
