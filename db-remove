@@ -67,7 +67,7 @@ for pkgname in ${pkgnames[@]}; do
 	remove_pkgs+=(${extrapkgs[@]})
 
 	for pkg in "${pkgs[@]}"; do
-		if [ -f "$ftppath_debug/${tarches[0]}/$pkg-$DEBUGSUFFIX"*$PKGEXT ]; then
+		if [[ -f "$HISTORYREPO/$repo-$DEBUGSUFFIX/${tarches[0]}/$pkg-$DEBUGSUFFIX" ]]; then
 			remove_dbg_pkgs+=("$pkg-$DEBUGSUFFIX")
 		fi
 	done

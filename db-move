@@ -13,10 +13,6 @@ repo_from="${args[0]}"
 repo_to="${args[1]}"
 arch="${args[2]}"
 pkgnames=("${args[@]:3}")
-ftppath_from="${FTP_BASE}/${repo_from}/os"
-ftppath_to="${FTP_BASE}/${repo_to}/os"
-ftpdebug_from="${FTP_BASE}/${repo_from}-${DEBUGSUFFIX}/os"
-ftpdebug_to="${FTP_BASE}/${repo_to}-${DEBUGSUFFIX}/os"
 
 if ! check_repo_permission $repo_to || ! check_repo_permission $repo_from; then
 	die "You don't have permission to move packages from ${repo_from} to ${repo_to}"
@@ -48,7 +44,7 @@ for arch in ${arches[@]}; do
 
 		for pkg in $(find_removed_split_packages "${repo_from}" "${repo_to}" "${arch}" "${pkgname}"); do
 			pkgentry=$(pkgentry_from_db "${repo_to}" "${arch}" "${pkg}")
-			pkgarch=$(getpkgarch $(getpkgfile "${ftppath_to}/${arch}/${pkgentry}"*${PKGEXT}))
+			pkgarch=$(getpkgarch $(getpkgfile "${FTP_BASE}/${repo_to}/os/${arch}/${pkgentry}"*${PKGEXT}))
 			if [[ ${pkgarch} == any ]]; then
 				msg2 "any\t${pkg}\t[removal]"
 				for _arch in ${ARCHES[@]}; do
@@ -62,7 +58,7 @@ for arch in ${arches[@]}; do
 
 		arch_db_move "${repo_from}" "${repo_to}" "${arch}" "${pkgname}"
 
-		if [ -f "${ftpdebug_from}/${arch}/${pkgname}-${DEBUGSUFFIX}-${pkgver_from}"*${PKGEXT} ]; then
+		if [[ -f "${HISTORYREPO}/${repo_from}-${DEBUGSUFFIX}/${arch}/${pkgname}-${DEBUGSUFFIX}" ]]; then
 			arch_db_move "${repo_from}-${DEBUGSUFFIX}" "${repo_to}-${DEBUGSUFFIX}" \
 				"${arch}" "${pkgname}-${DEBUGSUFFIX}"
 		fi
@@ -79,9 +75,7 @@ if [[ ${#pkgs_to_remove[@]} > 0 ]]; then
 
 		arch_db_remove "${repo_to}" "${pkgarch}" "${pkgname}"
 
-		# handle egde-case of multiple versions around
-		pkgs=($(echo "${ftpdebug_to}/${arch}/${pkgname}-${DEBUGSUFFIX}"*${PKGEXT}))
-		if [ -f "${pkgs[0]}" ]; then
+		if [[ -f "${HISTORYREPO}/${repo_to}-${DEBUGSUFFIX}/${arch}/${pkgname}-${DEBUGSUFFIX}" ]]; then
 			arch_db_remove "${repo_to}-${DEBUGSUFFIX}" "${pkgarch}" "${pkgname}-${DEBUGSUFFIX}"
 		fi
 	done

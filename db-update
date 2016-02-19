@@ -103,7 +103,7 @@ for repo in ${repos[@]}; do
 			for _rarch in ${_rarchs[@]}; do
 				pkgs_to_remove+=($repo/$_pkg/$_rarch)
 			done
-			done
+		done
 
 		for _pkg in ${_pkgnames[@]}; do
 			pkgs_should_push[$_pkg]=$_pkgver
@@ -154,7 +154,7 @@ if [ ${#pkgs_to_remove[@]} -gt 0 ]; then
 		for a in ${arch[@]}; do
 			arch_db_remove $repo $a $pkg
 
-			if [ -f "$FTP_BASE/$repo-$DEBUGSUFFIX/os/$a/$pkg-$DEBUGSUFFIX"*$PKGEXT ]; then
+			if [[ -f "$HISTORYREPO/$repo-$DEBUGSUFFIX/$a/$pkg-$DEBUGSUFFIX" ]]; then
 				arch_db_remove $repo-$DEBUGSUFFIX $a $pkg-$DEBUGSUFFIX
 			fi
 		done
