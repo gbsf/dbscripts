@@ -235,7 +235,7 @@ releasePackage() {
 	done
 }
 
-checkAnyPackageDB() {
+checkAnyPackage() {
 	local repo=$1
 	local pkg=$2
 	local arch
@@ -267,20 +267,7 @@ checkAnyPackageDB() {
 	[ -r "${STAGING}"/${repo}/${pkg}.sig ] && fail "${repo}/${pkg}.sig found in staging dir"
 }
 
-checkAnyPackage() {
-	local repo=$1
-	local pkg=$2
-
-	checkAnyPackageDB $repo $pkg
-
-# TODO: remove? should not be needed anymore since we don't modify svn in dbscripts
-	#local pkgbase=$(getpkgbase "${FTP_BASE}/${PKGPOOL}/${pkg}")
-	#arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
-	#[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-any" ] \
-		#|| fail "svn-packages-copy/${pkgbase}/repos/${repo}-any does not exist"
-}
-
-checkPackageDB() {
+checkPackage() {
 	local repo=$1
 	local pkg=$2
 	local arch=$3
@@ -309,21 +296,7 @@ checkPackageDB() {
 	done
 }
 
-checkPackage() {
-	local repo=$1
-	local pkg=$2
-	local arch=$3
-
-	checkPackageDB $repo $pkg $arch
-
-# TODO: remove? should not be needed anymore since we don't modify svn in dbscripts
-	#local pkgbase=$(getpkgbase "${FTP_BASE}/${PKGPOOL}/${pkg}")
-	#arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
-	#[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-${arch}" ] \
-		#|| fail "svn-packages-copy/${pkgbase}/repos/${repo}-${arch} does not exist"
-}
-
-checkRemovedPackageDB() {
+checkRemovedPackage() {
 	local repo=$1
 	local pkgbase=$2
 	local arch=$3
@@ -336,20 +309,7 @@ checkRemovedPackageDB() {
 	done
 }
 
-checkRemovedPackage() {
-	local repo=$1
-	local pkgbase=$2
-	local arch=$3
-
-	checkRemovedPackageDB $repo $pkgbase $arch
-
-# TODO: remove? should not be needed anymore since we don't modify svn in dbscripts
-	#arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
-	#[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-${arch}" ] \
-		#&& fail "svn-packages-copy/${pkgbase}/repos/${repo}-${arch} should not exist"
-}
-
-checkRemovedAnyPackageDB() {
+checkRemovedAnyPackage() {
 	local repo=$1
 	local pkgbase=$2
 	local arch
@@ -362,18 +322,6 @@ checkRemovedAnyPackageDB() {
 				&& fail "${pkgbase} should not be in ${repo}/os/${arch}/${repo}${db%.tar.*}"
 		done
 	done
-}
-
-checkRemovedAnyPackage() {
-	local repo=$1
-	local pkgbase=$2
-
-	checkRemovedAnyPackageDB $repo $pkgbase
-
-# TODO: remove? should not be needed anymore since we don't modify svn in dbscripts
-	#arch_svn up -q "${TMP}/svn-packages-copy/${pkgbase}"
-	#[ -d "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-any" ] \
-		#&& fail "svn-packages-copy/${pkgbase}/repos/${repo}-any should not exist"
 }
 
 # vim: ft=sh:

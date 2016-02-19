@@ -66,6 +66,7 @@ for arch in ${arches[@]}; do
 	done
 done
 
+# TODO: assumes all packages are in the same repo, might not be the case
 if [[ ${#pkgs_to_remove[@]} > 0 ]]; then
 	pkgs_to_remove=($(dedup_array ${pkgs_to_remove[@]}))
 

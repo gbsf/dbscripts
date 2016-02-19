@@ -76,6 +76,7 @@ done
 remove_pkgs=($(dedup_array "${remove_pkgs[@]}"))
 remove_dbg_pkgs=($(dedup_array "${remove_dbg_pkgs[@]}"))
 
+# TODO: assumes all packages are in the same repo, might not be the case for auto-removed split packages
 if [[ ${#remove_pkgs[@]} > 0 ]]; then
 	for tarch in ${tarches[@]}; do
 		arch_db_remove "$repo" "$tarch" ${remove_pkgs[@]}
