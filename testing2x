@@ -8,14 +8,16 @@ if [ $# -lt 1 ]; then
 	exit 1
 fi
 
-# Lock everything to reduce  possibility of interfering task between the different repo-updates
+# Lock everything to reduce the possibility of interfering task between the different repo-updates
 script_lock
 for repo in ${TESTING_REPO} ${STABLE_REPOS[@]}; do
 	for pkgarch in ${ARCHES[@]}; do
 		repo_lock ${repo} ${pkgarch} || exit 1
+		repo_lock ${repo}-${DEBUGSUFFIX} ${pkgarch} || exit 1
 	done
 done
 
+declare -a removed_pkgs
 for pkgname in "$@"; do
 	msg "Moving $pkgname"
 
@@ -32,20 +34,37 @@ for pkgname in "$@"; do
 		fi
 		${found_source} || continue
 
-		for repo in ${STABLE_REPOS[@]}; do
-			path="${HISTORYREPO}/${repo}/${pkgarch}/${pkgname}"
-			if [ -e "${path}" ]; then
-				found_target=true
-				repo_to="${repo}"
+		repo_to=$(find_repo_for_package ${pkgname} ${pkgarch}) && found_target=true
 
-				msg2 "$pkgarch $repo_from -> $repo_to"
-				arch_db_move "$repo_from" "$repo_to" "$pkgarch" "$pkgname"
-				break
-			fi
-		done
-		${found_target} || warning "${pkgname} not found in any of these repos: ${STABLE_REPOS[@]}. skipping"
+		if ! ${found_target}; then
+			warning "${pkgname} not found in any of these repos: ${STABLE_REPOS[@]}. skipping"
+			continue
+		fi
+
+		removed_pkgs+=($(find_removed_split_packages ${repo_from} ${repo_to} ${pkgarch} ${pkgname}))
+
+		msg2 "$pkgarch $repo_from -> $repo_to"
+		arch_db_move "$repo_from" "$repo_to" "$pkgarch" "$pkgname"
+
+		if [[ -f "$HISTORYREPO/$repo_to-$DEBUGSUFFIX/$pkgarch/$pkgname-$DEBUGSUFFIX" ]]; then
+			arch_db_move "$repo_from-$DEBUGSUFFIX" "$repo_to-$DEBUGSUFFIX" "$pkgarch" "$pkgname-$DEBUGSUFFIX"
+		fi
+
 	done
 	${found_source} || warning "${pkgname} not found in [${TESTING_REPO}]. skipping"
+done
+
+
+for pkg in "$(dedup_array "${removed_pkgs[@]}")"; do
+	msg "Removing $pkg"
+	for pkgarch in "${ARCHES[@]}"; do
+		repo=$(find_repo_for_package $pkg $pkgarch) || continue
+		arch_db_remove "$repo" "$pkgarch" "$pkg"
+
+		if [[ -f "$HISTORYREPO/$repo-$DEBUGSUFFIX/$pkgarch/$pkg-$DEBUGSUFFIX" ]]; then
+			arch_db_remove "$repo-$DEBUGSUFFIX" "$pkgarch" "$pkg-$DEBUGSUFFIX"
+		fi
+	done
 done
 
 arch_history_commit "testing2x: $*"
@@ -53,6 +72,7 @@ arch_history_commit "testing2x: $*"
 for repo in  ${TESTING_REPO} ${STABLE_REPOS[@]}; do
 	for pkgarch in ${ARCHES[@]}; do
 		repo_unlock ${repo} ${pkgarch}
+		repo_unlock ${repo}-${DEBUGSUFFIX} ${pkgarch}
 	done
 done
 

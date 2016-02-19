@@ -683,6 +683,7 @@ arch_db_remove() {
 	local repo=$1
 	local arch=$2
 	local pkgs=(${@:3})
+	local pkgname
 
 	arch_repo_remove "$@"
 
@@ -696,6 +697,7 @@ arch_db_move() {
 	local repo_to=$2
 	local arch=$3
 	local pkgnames=(${@:4})
+	local pkgname
 
 	local ftppath_from="${FTP_BASE}/${repo_from}/os"
 
@@ -741,6 +743,21 @@ find_removed_split_packages() {
 
 	# list pkgnames_from twice to make them non-unique
 	uniq_array ${pkgnames_from[@]} ${pkgnames_from[@]} ${pkgnames_to[@]}
+}
+
+find_repo_for_package() {
+	local pkgname=$1
+	local pkgarch=$2
+	local repo
+
+	for repo in ${STABLE_REPOS[@]}; do
+		path="${HISTORYREPO}/${repo}/${pkgarch}/${pkgname}"
+		if [ -e "${path}" ]; then
+			echo "${repo}"
+			return
+		fi
+	done
+	return 1
 }
 
 arch_history_add() {
