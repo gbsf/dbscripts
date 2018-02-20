@@ -59,20 +59,13 @@ __archrelease() {
 	local tarch
 	local tag
 
-	pkgarches=($(. PKGBUILD; echo ${arch[@]}))
+	pkgver=$(. PKGBUILD; get_full_version)
 	pushd ..
-	for tarch in ${pkgarches[@]}; do
-		tag=${repo}-${tarch}
 
-		if [[ -d repos/$tag ]]; then
-			svn rm repos/$tag/PKGBUILD
-		else
-			mkdir -p repos/$tag
-			svn add repos/$tag
-		fi
+	mkdir -p tags/$pkgver
+	svn add --parents tags/$pkgver
 
-		svn copy -r HEAD trunk/PKGBUILD repos/$tag/
-	done
+	svn copy -r HEAD trunk/PKGBUILD tags/$pkgver/
 	svn commit -m "__archrelease"
 	popd
 }
@@ -117,6 +110,8 @@ eot
 	mkdir -p "${TMP}/ftp/${SRCPOOL}"
 	mkdir -p "${TMP}/history-repo"
 	git init -q "${TMP}/history-repo"
+	git -C "${TMP}/history-repo" config user.email "tester@localhost"
+	git -C "${TMP}/history-repo" config user.name "Bob Tester"
 
 	svnadmin create "${TMP}/svn-packages-repo"
 	svn checkout -q "file://${TMP}/svn-packages-repo" "${TMP}/svn-packages-copy"
@@ -175,12 +170,15 @@ checkPackageDB() {
 	# FIXME: We guess the location of the PKGBUILD used for this repo
 	# We cannot read from trunk as __updatePKGBUILD() might have bumped the version
 	# and different repos can have different versions of the same package
-	local pkgbuildPaths=($(compgen -G "${TMP}/svn-packages-copy/${pkgbase}/repos/${repo}-*"))
-	local pkgbuildPath="${pkgbuildPaths[0]}"
+	local historyVersions=($(compgen -G "${TMP}/history-repo/${repo}/*/${pkgbase}"))
+	local historyVersion="${historyVersions[0]}"
+	local pkgbuildVersion=($(<$historyVersion))
+	local pkgbuildPath="${TMP}/svn-packages-copy/${pkgbase}/tags/${pkgbuildVersion[1]}"
 	echo Repo is $repo
-	echo pkgbuildPaths = ${pkgbuildPaths[@]}
+	echo historyVersions = ${historyVersions[@]}
+	echo historyVersion = ${historyVersion}
+	echo pkgbuildVersion = ${pkgbuildVersion[@]}
 	echo pkgbuildPath = ${pkgbuildPath}
-	ls -ahl ${TMP}/svn-packages-copy/${pkgbase}/repos/
 	[ -r "${pkgbuildPath}/PKGBUILD" ]
 
 	local pkgarches=($(. "${pkgbuildPath}/PKGBUILD"; echo ${arch[@]}))

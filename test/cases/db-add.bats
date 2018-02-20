@@ -15,10 +15,10 @@ __movePackageToRepo() {
 
 	# FIXME: pkgbase might not be part of the package filename
 	mv -v "${STAGING}"/${repo}/${pkgbase}-*-*-${arch}${PKGEXT}{,.sig} "${FTP_BASE}/${PKGPOOL}/"
-	for tarch in ${tarches[@]}; do
-		ln -sv ${FTP_BASE}/${PKGPOOL}/${pkgbase}-*-*-${arch}${PKGEXT} "${FTP_BASE}/${repo}/os/${tarch}/"
-		ln -sv ${FTP_BASE}/${PKGPOOL}/${pkgbase}-*-*-${arch}${PKGEXT}.sig "${FTP_BASE}/${repo}/os/${tarch}/"
-	done
+	#for tarch in ${tarches[@]}; do
+	#	ln -sv ${FTP_BASE}/${PKGPOOL}/${pkgbase}-*-*-${arch}${PKGEXT} "${FTP_BASE}/${repo}/os/${tarch}/"
+	#	ln -sv ${FTP_BASE}/${PKGPOOL}/${pkgbase}-*-*-${arch}${PKGEXT}.sig "${FTP_BASE}/${repo}/os/${tarch}/"
+	#done
 }
 
 @test "add single packages" {

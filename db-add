@@ -18,7 +18,7 @@ if ! check_repo_permission $repo; then
 	die "You don't have permission to add packages to %s" "$repo"
 fi
 
-if [ "$arch" == "all" ]; then
+if [ "$arch" == "any" ]; then
 	tarches=(${ARCHES[@]})
 else
 	tarches=("$arch")
